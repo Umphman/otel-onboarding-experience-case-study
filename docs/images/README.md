@@ -6,9 +6,18 @@ a reviewer can understand from the credential-free local LGTM demonstration.
 Optional Grafana Cloud captures may supplement, but should not replace, that
 reproducible evidence.
 
-**Current status:** no Docker, Alloy, Grafana, or Grafana Cloud capture has been
-observed or committed. Every filename below is a plan until the exact result is
-produced by one of the clean runs in the [demo runbook](../../DEMO.md).
+**Current status:** the live Alloy graph was reviewed, but no public-safe
+Docker, Alloy, Grafana, or Grafana Cloud capture file is committed or claimed.
+Every filename below remains a plan until the exact result is produced and
+saved from one of the clean runs in the [demo runbook](../../DEMO.md).
+
+The executable implementation used for the completed local verification is
+`5cbd086da453659104b9f58eb007ba6557d1356d`. The initial evidence and
+documentation record was introduced at
+`4fcea6b8dc675975b2f4374d8aec1f9127f7262e`, a documentation-only descendant
+of that executable tree. Future screenshots must record the actual checked-out
+SHA used for their capture; neither milestone SHA implies that an image already
+exists.
 
 Do not commit a screenshot until the implementation has produced the state it
 depicts. Never fabricate product UI or use a mockup where the caption claims a
@@ -20,7 +29,10 @@ behavior as observed without the underlying counter, query, or UI result.
 
 | File | Claim it should prove | Required visible evidence | Suggested alt text |
 | --- | --- | --- | --- |
-| `01-alloy-receipt.png` | Each required signal traversed the Alloy pipeline | For traces, metrics, and logs: receiver accepted/refused delta, evidence after the configured processors, exporter sent/failed delta, and the matching backend query; include the component graph for topology, not as delivery proof | “Signal-specific Alloy receiver, processor, and exporter evidence for the synthetic checkout run.” |
+| `01-alloy-topology.png` (supporting) | Alloy is configured with the intended topology and its components are healthy | Receiver → processor → exporter topology and only the live activity actually visible. In the reviewed window, metrics and traces were visibly active; no log edge was visible. The graph does not prove backend storage. | “Healthy Alloy topology with visible metric and trace activity; no log edge is visible, and backend storage is not established by this graph.” |
+| `01a-alloy-traces.png` | The bounded trace probe traversed Alloy | Trace receiver accepted/refused delta, post-processor/debug evidence, exporter sent/failed delta, and same-run Tempo result | “Trace-specific Alloy counters and post-processor evidence for the bounded synthetic checkout probe.” |
+| `01b-alloy-metrics.png` | The bounded metric probe traversed Alloy | Metric receiver accepted/refused delta, post-processor/debug evidence, exporter sent/failed delta, and same-run Prometheus result | “Metric-specific Alloy counters and post-processor evidence for the bounded synthetic checkout probe.” |
+| `01c-alloy-logs.png` | The bounded log probe traversed Alloy | Log receiver accepted/refused delta, post-processor/debug evidence, exporter sent/failed delta, and same-run Loki result | “Log-specific Alloy counters and post-processor evidence for the bounded synthetic checkout probe.” |
 | `02-service-identity.png` | Resource attribution is intentional and consistent | `service.name=checkout-api`, `service.namespace=otel-onboarding`, version, local environment, and bounded time range | “Verified OpenTelemetry resource identity for checkout-api in the local environment.” |
 | `03-correlated-trace.png` | A known checkout produced the expected connected trace | Checkout entry span, inventory work, duration, and service identity | “Connected trace for a synthetic checkout and its inventory work.” |
 | `04-correlated-log.png` | A structured checkout log can be joined to the same trace | Synthetic log event and matching trace context, with identifiers redacted if necessary | “Synthetic checkout log correlated with its originating trace.” |
@@ -29,14 +41,15 @@ behavior as observed without the underlying counter, query, or UI result.
 | `07-failure-diagnosis.png` | A deliberate bad endpoint produces an actionable diagnosis | Healthy workload, failing export boundary, diagnostic category, and remediation context | “Bad OTLP endpoint diagnosis identifying the failed export hop while checkout-api remains healthy.” |
 | `08-recovered-state.png` | Recovery restores useful telemetry rather than only component health | A probe created after the fix, renewed export and backend receipt, intended service identity, connected checkout/inventory trace, and correlated log | “Fresh checkout telemetry received, attributed, and correlated after the OTLP endpoint was restored.” |
 
-This is the canonical evidence list and matches [the demo
-runbook](../../DEMO.md#evidence-capture-checklist). If the Alloy counters are
-not legible in one image, preserve same-run source captures as
-`01a-alloy-traces.png`, `01b-alloy-metrics.png`, and `01c-alloy-logs.png`; the
-three files jointly support claim 01 and must share one run ID and bounded
-window. The final README should link an approximately three-minute walkthrough
-captured from the same verified commit. An optional `architecture-overview.svg`
-may explain the design, but it is not runtime proof.
+This is the canonical set of eight evidence groups and matches [the demo
+runbook](../../DEMO.md#evidence-capture-checklist). The topology image is a
+supporting source for group 01; it does not replace signal evidence. The
+`01a`–`01c` files jointly satisfy group 01 and must share one run ID and bounded
+window. The Loki result in `01c` and the focused `04-correlated-log.png` capture
+establish log storage and correlation; the topology graph does not. The final
+README should link an approximately three-minute walkthrough captured from the
+same verified commit. An optional `architecture-overview.svg` may explain the
+design, but it is not runtime proof.
 
 ## Required evidence groups
 
@@ -46,6 +59,9 @@ The healthy set must show the application health result separately from
 telemetry delivery. It must then show all three signal paths, intended service
 identity, checkout/inventory trace topology, same-trace structured log, and the
 request/error/duration metrics used to answer “Are checkouts healthy?”
+The Alloy graph may support the topology claim only. Record that the current
+live graph showed activity for metrics and traces but no log edge, and use the
+signal-specific sources plus Loki to prove logs.
 
 ### Failure state
 
@@ -71,7 +87,10 @@ caption must identify the run for each image; do not imply they are one event.
 1. Complete Phase 0 of the [demo runbook](../../DEMO.md#phase-0-prepare-a-clean-attributable-run) and assign a run ID.
 2. Use a dedicated demonstration stack containing only synthetic services and traffic.
 3. Complete the first volume-clean startup; record a unique healthy probe ID.
-4. Capture receiver → processor → exporter → backend evidence separately for traces, metrics, and logs.
+4. Capture the Alloy topology as a supporting view, explicitly noting visible
+   metric/trace activity and the absent log edge; then capture receiver →
+   processor → exporter → backend evidence separately for traces, metrics, and
+   logs.
 5. Select the narrowest time range that clearly contains the probe.
 6. Set filters explicitly to the synthetic service and the run's declared
    environment (`local` for the default stack, `demo` for the Cloud variant).
@@ -104,9 +123,10 @@ reproduce the claim.
 | Surface | Alloy component/telemetry view or Grafana data source and panel |
 | Query | Exact sanitized query, labels, and filters used |
 | Outcome | Actual counts, state, status, or sanitized error visible |
+| Visible activity / limitation | What the surface visibly establishes and what it does not; for the current Alloy graph, metrics and traces are visible, no log edge is visible, and backend storage is not established |
 | Safety review | Reviewer/date and confirmation that no secret or private identifier is visible |
 
-For `01-alloy-receipt.png` and any `01a`–`01c` source captures, also record this
+For the group 01 topology and `01a`–`01c` source captures, also record this
 matrix in the [verification
 record](../evidence/runtime-verification.md#observed-alloy-to-backend-evidence):
 
@@ -118,6 +138,36 @@ record](../evidence/runtime-verification.md#observed-alloy-to-backend-evidence):
 
 Use the actual metric names and before/after values exposed by the pinned Alloy
 version. Do not guess counter names or use a component graph as a substitute.
+The `01-alloy-topology.png` capture can show topology and visible activity only;
+the three signal-specific sources and their backend results carry the delivery
+claim.
+
+## Planned Grafana Cloud evidence
+
+Grafana Cloud has not been executed for this evidence record. Every file in
+this section is **Pending — unobserved**. Capture it only during the controlled
+invalid-then-valid run in the [demo runbook](../../DEMO.md#optional-grafana-cloud-execution).
+The Cloud Alloy configuration intentionally omits the debug exporter, so do not
+plan a Cloud debug-output claim.
+
+| File | Pending claim | Required visible evidence |
+| --- | --- | --- |
+| `cloud-01-invalid-auth.png` | Invalid credentials fail at the hosted export boundary while the local app-to-Alloy path remains healthy | Local Alloy before/after counters, exact sanitized status/error, bounded probe identity, and Cloud query showing the new probe is absent |
+| `cloud-02-export-success.png` | Correct credentials restore successful export or ingestion | New valid-phase baseline/delta, no credential error for that window, and a hosted result for the new probe |
+| `cloud-03-service-identity.png` | The hosted service is visible with the declared attribution | Name, namespace, version, `demo` environment, and only public-safe host identity |
+| `cloud-04-hosted-trace.png` | The controlled workload produced a hosted connected trace | Checkout and inventory spans, intended service identity, duration, trace ID, and bounded valid-phase window |
+| `cloud-05-hosted-log.png` | The controlled workload produced a hosted structured log correlated with the trace | Synthetic checkout record, intended service identity, the same trace ID as `cloud-04`, and bounded valid-phase window |
+| `cloud-06-hosted-metrics.png` | The controlled workload produced hosted metrics | Request, error, and latency metrics for the bounded valid-phase window and intended service identity |
+| `cloud-07-downstream-view.png` | At least one curated downstream view is genuinely active | The synthetic service/workload in Application Observability or another explicitly named activated surface; raw OTLP receipt alone is insufficient |
+
+Every hosted-surface image must display or carry a caption with `Observed in
+Grafana Cloud on YYYY-MM-DD`, the full checked-out commit SHA, and `Synthetic
+workload and data`. Label the invalid-auth Alloy image `Observed locally during
+the controlled Grafana Cloud run on YYYY-MM-DD` instead, because that error is
+not a hosted-data observation; include the same SHA and synthetic-data label.
+Also record the exact run/probe IDs, UTC timestamp, image versions, and the
+visible-activity/limitation field. Do not expose a token, endpoint, account,
+organization, stack, tenant, or user identifier.
 
 ## Approximately three-minute walkthrough
 

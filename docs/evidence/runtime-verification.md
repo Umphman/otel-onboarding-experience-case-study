@@ -8,6 +8,19 @@ committed, volume-clean publication runs recorded below. The optional Grafana
 Cloud check, dated screenshot gallery, and walkthrough video are still
 required for their corresponding publication claims.
 
+## Provenance milestones
+
+- **Executable implementation verified:**
+  `5cbd086da453659104b9f58eb007ba6557d1356d`.
+- **Initial local evidence and documentation record introduced:**
+  `4fcea6b8dc675975b2f4374d8aec1f9127f7262e`. This is a docs-only
+  descendant of the verified implementation commit, not the runtime source for
+  the local runs.
+- **Grafana Cloud execution:** pending. Its evidence record must preserve the
+  actual checked-out SHA used for the run. Any later commit that adds captures,
+  updates this record, or becomes the release commit must be recorded
+  separately rather than presented as the execution source.
+
 ## Status taxonomy
 
 | Evidence layer | Status | What the status means |
@@ -231,10 +244,30 @@ recorded evidence. The current verifier emits concrete failure text and a
 nonzero exit; it does not emit the product taxonomy codes proposed elsewhere in
 this case study.
 
+## Controlled Grafana Cloud checkpoint
+
+**Status: pending — unobserved.** No row below is evidence of a completed Cloud
+run. The Cloud configuration intentionally omits the debug exporter; debug
+activity recorded in the local runs is local-only evidence and is not exported
+to Grafana Cloud.
+
+| Checkpoint | Status | Required record |
+| --- | --- | --- |
+| Execution provenance | **Pending — unobserved** | Actual checked-out SHA used for the Cloud run, followed separately by any later capture or release commit |
+| Invalid-auth boundary | **Pending — unobserved** | Bounded synthetic probe, sanitized authentication failure, local receiver evidence, and confirmation that the probe did not appear in the intended Cloud stack |
+| Valid authenticated run | **Pending — unobserved** | Fresh bounded synthetic probe after replacing the invalid credential, with sanitized successful export or ingestion evidence |
+| Hosted signal receipt | **Pending — unobserved** | Independent Cloud evidence for traces, metrics, and logs from the valid probe |
+| Identity and correlation | **Pending — unobserved** | Intended service resource attributes plus checkout/inventory trace continuity and logs correlated to the same trace |
+| Downstream view | **Pending — unobserved** | The named Grafana Cloud product surface or query view used to answer the operating question |
+| Stack shutdown | **Pending — unobserved** | UTC time when the bounded Cloud Compose stack was stopped and its volumes removed |
+| Token revocation | **Pending — unobserved** | UTC revocation time for the temporary least-privilege token; never record the token value |
+| Local secret removal and history scan | **Pending — unobserved** | Confirmation that the ignored environment and secret files were deleted and that tracked files and Git history contain no credential material |
+
 ## Screenshot and video status
 
-- Eight canonical images—the six healthy proof categories plus failure and
-  recovery: **pending — unobserved**.
+- Eight canonical evidence groups—the six healthy proof categories plus failure
+  and recovery: **pending — unobserved**. Group 01 uses one supporting topology
+  image and three signal-specific source captures.
 - Approximately three-minute walkthrough: **pending — unrecorded**.
 - Grafana Cloud capture: **pending — unobserved and optional**.
 

@@ -32,10 +32,12 @@ function runPreflight(overrides = {}) {
   return result;
 }
 
-test('Cloud preflight accepts a bounded HTTPS base endpoint and file-backed token', () => {
+test('Cloud preflight accepts exactly 20 requests without revealing endpoint or token', () => {
   const result = runPreflight();
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout, /cloud preflight passed/u);
+  assert.match(result.stdout, /endpoint=valid/u);
+  assert.doesNotMatch(result.stdout, /otlp-gateway\.example\.test/u);
   assert.doesNotMatch(result.stdout, /temporary-test-token/u);
 });
 
@@ -49,12 +51,16 @@ test('Cloud preflight rejects plaintext transport and signal-specific endpoints'
   assert.match(signalPath.stderr, /base OTLP endpoint/u);
 });
 
-test('Cloud preflight rejects inline API keys and unbounded demo traffic', () => {
+test('Cloud preflight rejects inline API keys', () => {
   const inline = runPreflight({ GRAFANA_CLOUD_API_KEY: 'must-not-be-here' });
   assert.notEqual(inline.status, 0);
   assert.match(inline.stderr, /do not put the API key/u);
+});
 
-  const unbounded = runPreflight({ LOADGEN_REQUESTS: '10000' });
-  assert.notEqual(unbounded.status, 0);
-  assert.match(unbounded.stderr, /integer from 1 through 100/u);
+test('Cloud preflight rejects any request count other than 20', () => {
+  for (const requestCount of ['19', '21', '10000']) {
+    const result = runPreflight({ LOADGEN_REQUESTS: requestCount });
+    assert.notEqual(result.status, 0, `LOADGEN_REQUESTS=${requestCount} unexpectedly passed`);
+    assert.match(result.stderr, /must be exactly 20/u);
+  }
 });

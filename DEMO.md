@@ -8,11 +8,14 @@ Grafana Cloud route requires a disposable stack and a temporary token.
 
 The Node/mock-receiver checks, two volume-clean Docker runs, and all three local
 failure-and-recovery scenarios are observed in the [runtime verification
-record](docs/evidence/runtime-verification.md). The local publication runs came
-from the same recorded implementation commit and include Alloy counter deltas
-plus Tempo, Loki, and Prometheus queries. The screenshot/video set and Grafana
-Cloud remain **unobserved**; those sections below remain an execution and
-capture contract.
+record](docs/evidence/runtime-verification.md). Both local publication runs
+executed the implementation at
+`5cbd086da453659104b9f58eb007ba6557d1356d`; the initial evidence and
+documentation record was introduced at
+`4fcea6b8dc675975b2f4374d8aec1f9127f7262e`, a documentation-only descendant
+of that executable tree. The runs include Alloy counter deltas plus Tempo,
+Loki, and Prometheus queries. The screenshot/video set and Grafana Cloud remain
+**unobserved**; those sections below remain an execution and capture contract.
 
 Use these labels consistently:
 
@@ -132,7 +135,12 @@ pre-existing volume is required.
 
 Open the Alloy UI at <http://localhost:12345> and Grafana at
 <http://localhost:3000>. The component graph establishes configured topology
-and health; it does not, by itself, prove that any signal traversed the pipeline.
+and health; it does not, by itself, prove that any signal traversed the pipeline
+or reached backend storage. In the reviewed window, activity was visible for
+metrics and traces, but no log edge was visible. Treat that as a narrow
+topology/activity observation only. Prove logs separately with Alloy counters
+or post-processor output and the Loki result; a publishable graph capture is
+still pending.
 
 For one bounded probe window, record the actual Alloy telemetry metric names,
 before/after values, timestamps, and backend query. Each required signal needs
@@ -180,9 +188,17 @@ supports it; otherwise use the exact service identity and metric names.
 
 Capture the following from the same commit and run window:
 
-1. **Alloy pipeline:** component graph plus signal-specific receiver,
-   post-processor/debug, exporter, and failed-record evidence for traces,
-   metrics, and logs.
+Take `01-alloy-topology.png` as a supporting Alloy topology capture. Its claim
+is limited to configured topology, component health, and the activity actually
+visible in the graph: metrics and traces in the reviewed window, with no
+visible log edge. It is not evidence of backend storage. Then capture these
+evidence groups:
+
+1. **Alloy signal receipt (group 01):** signal-specific receiver,
+   post-processor/debug, exporter, and failed-record evidence in
+   `01a-alloy-traces.png`, `01b-alloy-metrics.png`, and
+   `01c-alloy-logs.png`, paired with the matching Tempo, Prometheus, and Loki
+   results. The three source captures jointly satisfy group 01.
 2. **Service identity:** name, namespace, version, and environment.
 3. **Complete trace:** checkout and inventory with the expected parent-child
    relationship.
@@ -286,34 +302,75 @@ docker compose down -v --remove-orphans
 
 Grafana Cloud has **not** been executed for the current evidence record. The
 local LGTM route is the required reference proof; one Cloud run would add hosted
-authentication and destination evidence.
+authentication and destination evidence. The Cloud Alloy configuration
+intentionally has **no debug exporter**; debug output is confined to the local
+LGTM route. Never print the resolved Compose model, container environment,
+token, endpoint, stack identifier, account, organization, or user.
 
-Copy `.env.cloud.example` to a runtime-only `.env.cloud`. Put a narrowly scoped,
-temporary token—without whitespace or a trailing newline—in the ignored file
-named by `GRAFANA_CLOUD_API_KEY_FILE`. Validate the HTTPS base OTLP endpoint,
-bounded traffic, secret path, and Compose model before starting:
+Create a disposable stack and a temporary token limited to metrics, logs, and
+traces write. Copy `.env.cloud.example` to the ignored `.env.cloud`, set
+`LOADGEN_REQUESTS=20`, and put only an intentionally invalid value—without
+whitespace or a trailing newline—in the ignored file named by
+`GRAFANA_CLOUD_API_KEY_FILE`. Run the invalid-credential phase first:
 
 ```bash
 npm run verify:cloud-config -- .env.cloud
 docker compose --env-file .env.cloud -f docker-compose.cloud.yml config --quiet
-docker compose --env-file .env.cloud -f docker-compose.cloud.yml up -d --build --wait
+docker compose --env-file .env.cloud -f docker-compose.cloud.yml down -v --remove-orphans
+docker compose --env-file .env.cloud -f docker-compose.cloud.yml build --no-cache
+docker compose --env-file .env.cloud -f docker-compose.cloud.yml up -d --wait alloy app
 ```
 
-The Cloud load generator is one-shot and defaults to 20 requests. Alloy's OTLP
-receiver is reachable only inside the Compose network; only its local status UI
-is published. The Cloud resource attributes include a stable, synthetic
-`grafana.host.id` for this Docker proof; keep or deliberately replace it if the
-run activates Application Observability. Never print the resolved Compose model
-or container environment during a credentialed run. Stop the stack and revoke
-the token immediately after capture.
+Confirm the app and Alloy health endpoints, capture the Alloy receiver/exporter
+counter baseline, and then run exactly one 20-request workload:
 
-If executed, distinguish `Observed locally` from `Observed in Grafana Cloud`.
-Capture invalid credentials failing with the exact sanitized response, correct
-credentials succeeding, a new probe in the intended stack, correct service
-attribution, trace/log correlation, and one downstream view when available.
-Raw OTLP receipt does not prove that a curated Application Observability surface
-is activated. Never expose the token, stack identifier, account, or user; revoke
-the token immediately after capture.
+```bash
+docker compose --env-file .env.cloud -f docker-compose.cloud.yml run --rm --no-deps loadgen
+```
+
+Capture the after-counters, the exact sanitized authentication status/error,
+evidence that the local app-to-Alloy boundary remained healthy, and absence of
+the new synthetic probe in the intended Cloud stack. Do not write an expected
+`401` or `403` if a different status was actually returned.
+
+Next, replace the secret-file contents locally with the valid temporary token;
+do not paste it into chat, a command line, terminal output, or Git. Recreate only
+Alloy so the valid phase has an explicit credential boundary, then capture a new
+baseline and run the same one-shot workload exactly once:
+
+```bash
+docker compose --env-file .env.cloud -f docker-compose.cloud.yml up -d --force-recreate --no-deps --wait alloy
+docker compose --env-file .env.cloud -f docker-compose.cloud.yml run --rm --no-deps loadgen
+```
+
+Record the actual checked-out SHA and probe IDs. Verify hosted metrics, logs,
+and traces; the intended service identity; trace/log correlation; successful
+export or ingestion evidence; and at least one downstream product view when
+available. Raw OTLP receipt does not prove that a curated Application
+Observability surface is activated. Label local Alloy evidence separately from
+evidence observed in Grafana Cloud.
+
+Immediately after capture, remove the stack and its volume, revoke the token in
+Grafana Cloud, and record the revocation time in UTC:
+
+```bash
+docker compose --env-file .env.cloud -f docker-compose.cloud.yml down -v --remove-orphans
+```
+
+Delete `.env.cloud` and the token file without printing either file. Then verify
+that the paths are ignored, the working tree contains no credential artifact,
+and neither path appears in Git history:
+
+```bash
+git check-ignore -v .env.cloud secrets/grafana-cloud-api-key.txt
+git status --short
+git log --all -- .env.cloud secrets/grafana-cloud-api-key.txt
+```
+
+The status and history commands must show no tracked secret artifact or history
+entry.
+Record deletion, history-scan, stack-removal, and revocation results in the
+verification record before changing any Cloud claim to observed.
 
 ## Approximately three-minute video outline
 
@@ -337,9 +394,14 @@ verification record.
 
 ## Evidence capture checklist
 
-Save sanitized images under `docs/images/`:
+Save sanitized evidence for these eight groups under `docs/images/`. Group 01
+uses multiple source captures because one graph cannot prove all three signals:
 
-1. `01-alloy-receipt.png` — per-signal receiver → processor → exporter evidence.
+1. `01-alloy-topology.png` — supporting topology/health view only; plus
+   `01a-alloy-traces.png`, `01b-alloy-metrics.png`, and
+   `01c-alloy-logs.png` — per-signal receiver → processor → exporter evidence
+   that jointly satisfies group 01. Pair log receipt with the group 04 Loki
+   capture for log storage and correlation.
 2. `02-service-identity.png` — intended name, namespace, version, and environment.
 3. `03-correlated-trace.png` — checkout and inventory in one trace.
 4. `04-correlated-log.png` — structured log with that trace ID.
@@ -356,8 +418,9 @@ public-safety requirements. Do not publish a placeholder as evidence.
 - [x] Complete both volume-clean Docker runs from one recorded commit.
 - [x] Add and pass a pipeline-targeted verifier; `verify:signals` remains a
   mock-receiver check and does not satisfy this item.
-- [ ] Capture eight dated images: the six healthy proof categories plus failure
-  and recovery states.
+- [ ] Capture eight dated evidence groups: the six healthy proof categories plus
+  failure and recovery states. Group 01 includes the supporting topology image
+  and three signal-specific source captures.
 - [ ] Record and link the approximately three-minute walkthrough above the fold.
 - [ ] Replace README capture-contract links with the actual proof.
 - [x] Keep Grafana Cloud explicitly unobserved unless the optional run occurs.

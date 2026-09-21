@@ -18,7 +18,15 @@ onboarding with Grafana Alloy.
 See the [runtime verification record](docs/evidence/runtime-verification.md) for tests; the
 [capture checklist](docs/images/) defines remaining proof.
 
-Local machine verification is complete for the committed implementation. The
+The executable implementation used for the completed local verification is
+commit `5cbd086da453659104b9f58eb007ba6557d1356d`. The initial local
+evidence and documentation record was introduced later at commit
+`4fcea6b8dc675975b2f4374d8aec1f9127f7262e`, a docs-only descendant that
+is not the runtime source. A Grafana Cloud run remains pending; its record must
+name the actual checked-out execution SHA and track any later capture or release
+commit separately.
+
+Local machine verification is complete for that verified executable tree. The
 curated screenshot set, walkthrough video, public GitHub remote, and CI result
 on that public commit remain pending and are not claimed here. Grafana Cloud
 proof and the broader product hypotheses also remain unverified.

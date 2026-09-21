@@ -75,12 +75,12 @@ if (token !== token.trim() || /\s/u.test(token)) {
 
 const requestText = values.get('LOADGEN_REQUESTS') || '20';
 const requestCount = Number(requestText);
-if (!Number.isInteger(requestCount) || requestCount < 1 || requestCount > 100) {
-  fail('LOADGEN_REQUESTS must be an integer from 1 through 100 for a bounded Cloud proof');
+if (!Number.isInteger(requestCount) || requestCount !== 20) {
+  fail('LOADGEN_REQUESTS must be exactly 20 for the controlled Cloud proof');
 }
 
 console.log('cloud preflight passed');
-console.log(`endpoint_host=${endpoint.host}`);
+console.log('endpoint=valid');
 console.log('instance_id=present');
 console.log(`token_file=${path.relative(process.cwd(), tokenPath)}`);
 console.log(`loadgen_requests=${requestCount}`);

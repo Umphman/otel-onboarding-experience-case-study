@@ -14,6 +14,11 @@ It uses the existing `docker-compose.cloud.yml` and `alloy/config.cloud.alloy`;
 there is no local-LGTM equivalent because the default local route intentionally
 requires no credentials.
 
+The Cloud Alloy configuration intentionally has no `debug` exporter. The
+controlled Cloud run sends only to the `grafana_cloud` exporter, so container
+logs cannot accidentally become a second copy of telemetry payloads. Local
+debug-exporter evidence belongs only to the separate local verification path.
+
 ## Safety prerequisites
 
 - Docker Desktop or another Docker Engine with Compose v2.
@@ -21,6 +26,9 @@ requires no credentials.
   reviewed.
 - The stack's exact OTLP endpoint and OTLP instance ID from its OpenTelemetry
   connection details.
+- Treat the endpoint host and every Cloud account, organization, stack, tenant,
+  and instance identifier as private. Exclude or redact them from screenshots,
+  transcripts, and committed evidence.
 - Synthetic sample traffic only. Do not point this exercise at a production
   workload or reuse production credentials.
 - `.env.cloud` and the token file under `secrets/` must remain ignored by Git.
@@ -43,33 +51,43 @@ and revoke it after capture.
    put only `intentionally-invalid-not-a-secret` in it, with no trailing
    newline. Do not use a malformed endpoint: the request must reach the Cloud
    authentication boundary for this scenario to be valid.
-4. Leave the synthetic service identity and load generator defaults in place.
+4. Leave the synthetic service identity in place and keep
+   `LOADGEN_REQUESTS=20`. The preflight rejects every other request count.
+5. Record the checked-out commit SHA and the UTC start time in the evidence
+   notes. Do not record the endpoint host, instance ID, or token.
 
-Start the Cloud topology:
+Reset prior Cloud state, validate the inputs, build the two application images,
+then start **only** Alloy and the application. Starting the named services is
+important: it prevents the Compose `loadgen` service from racing the baseline.
 
 ```bash
 npm run verify:cloud-config -- .env.cloud
-docker compose --env-file .env.cloud -f docker-compose.cloud.yml up -d --build --wait
+docker compose --env-file .env.cloud -f docker-compose.cloud.yml down -v --remove-orphans
+docker compose --env-file .env.cloud -f docker-compose.cloud.yml build --no-cache
+docker compose --env-file .env.cloud -f docker-compose.cloud.yml up -d --wait alloy app
 ```
 
-In another terminal, submit a recognizable synthetic request and check workload
-health:
+Confirm the application is healthy without generating checkout telemetry:
 
 ```bash
-curl -X POST http://localhost:8080/checkout -H "content-type: application/json" -d '{"checkoutId":"invalid-auth-demo","items":[{"sku":"grafana-mug","quantity":1}]}'
-curl http://localhost:8080/health
+curl --fail http://localhost:8080/health
 ```
 
-Inspect only the relevant Alloy logs. Do not dump the container environment or
-print `.env.cloud`:
+Before traffic, capture a baseline from <http://localhost:12345/metrics> for the
+`otelcol_receiver_accepted_*` and `otelcol_exporter_send_failed_*` counters
+listed below. Preserve the `component_id` label so the before/after values are
+attributable to the `app` receiver and `grafana_cloud` exporter.
+
+Run the one-shot generator **exactly once**. This is the entire invalid-token
+workload: 20 synthetic checkout requests, including the generator's expected
+validation failures. Do not also send a manual `POST /checkout`, and do not run
+the command a second time.
 
 ```bash
-docker compose --env-file .env.cloud -f docker-compose.cloud.yml logs --since=5m alloy
+docker compose --env-file .env.cloud -f docker-compose.cloud.yml run --rm --no-deps loadgen
 ```
 
-Use Alloy's local Prometheus endpoint to prove receipt and failed export. Open
-<http://localhost:12345/metrics>, record the values before a fresh request, then
-refresh after the batch interval. Search for:
+After the batch/retry interval, capture the same counters again:
 
 ```text
 otelcol_receiver_accepted_spans_total
@@ -85,6 +103,20 @@ failed-export counters for the `grafana_cloud` exporter must increase or Alloy
 must emit an equivalent failed-batch log with the Cloud HTTP status. Preserve
 the relevant label set when capturing evidence so a counter from another
 component cannot be mistaken for this pipeline.
+
+Inspect only the relevant Alloy logs; do not dump the container environment or
+print `.env.cloud`:
+
+```bash
+docker compose --env-file .env.cloud -f docker-compose.cloud.yml logs --since=10m alloy
+```
+
+In Grafana Cloud, use the recorded UTC window and
+`service.name=checkout-api` to confirm that no fresh traces, logs, or metrics
+from this invalid-token phase arrived. Capture the exact sanitized HTTP status
+or normalized authentication classification from Alloy and the bounded Cloud
+absence result. Redact the endpoint host, account/organization/stack and
+instance identifiers, authorization headers, and token-shaped values.
 
 The Alloy UI at <http://localhost:12345> can provide component-level context,
 but a green component graph proves that configuration loaded—not that Cloud
@@ -144,24 +176,81 @@ searching an empty backend when the failing control is the Cloud credential.
    `GRAFANA_CLOUD_API_KEY_FILE` with a valid, short-lived access-policy token
    carrying `metrics:write`, `logs:write`, and `traces:write`. Use an editor or
    approved runtime secret mechanism so the token does not enter shell history.
-2. Recreate the stack so Alloy receives the corrected runtime value:
+2. Run the preflight again. It must report `endpoint=valid`, not the endpoint
+   host, and `loadgen_requests=20`:
 
    ```bash
-docker compose --env-file .env.cloud -f docker-compose.cloud.yml up -d --build --force-recreate --wait
+npm run verify:cloud-config -- .env.cloud
    ```
 
-3. Send a new request with a new checkout ID. Do not use old data as recovery
-   proof.
-4. Confirm the authentication error stops, then verify new traces, logs, and
-   metrics in Grafana Cloud with `service.name=checkout-api`,
-   `service.version=1.0.0`, and `deployment.environment.name=demo`.
-5. Confirm the new checkout trace includes its inventory work and a structured
-   log carries the same trace ID.
-6. Revoke the temporary token after evidence capture and remove the local
-   secret file when it is no longer needed.
+3. Recreate **only Alloy** so the credential boundary is unambiguous while the
+   already-healthy application remains in place:
+
+   ```bash
+docker compose --env-file .env.cloud -f docker-compose.cloud.yml up -d --force-recreate --no-deps --wait alloy
+   ```
+
+4. Record a new UTC start time and a fresh Alloy-counter baseline. Then run the
+   one-shot generator exactly once—again, no manual checkout request:
+
+   ```bash
+docker compose --env-file .env.cloud -f docker-compose.cloud.yml run --rm --no-deps loadgen
+   ```
+
+5. Preserve one successful `checkoutId` and its returned trace ID from the
+   generator output as the correlation probe. After the export interval,
+   confirm the prior authentication failure has stopped and record the new
+   receiver/sent/failed counter deltas for all three signals.
+6. In Grafana Cloud, restrict every search to the recovery UTC window and prove:
+   - a fresh trace for the selected checkout contains both `checkout.process`
+     and `inventory.reserve` in one trace;
+   - structured `checkout started`, `inventory reserved`, and
+     `checkout completed` logs carry the selected `checkout_id`, with the same
+     trace ID as the trace;
+   - fresh `demo.checkout.requests` and `demo.checkout.duration` metric series
+     appear (the backend may normalize their displayed names); and
+   - traces, logs, and metrics all retain `service.name=checkout-api`,
+     `service.version=1.0.0`, and `deployment.environment.name=demo`.
+7. Open one enabled downstream Grafana Cloud product view, such as the service
+   overview or Application Observability, and confirm it identifies the same
+   `checkout-api` service from the controlled window. This distinguishes a
+   usable product outcome from raw Explore ingestion alone.
 
 Successful recovery must prove backend receipt, attribution, and correlation;
 the absence of a new error line alone is insufficient.
+
+## Mandatory cleanup and credential audit
+
+After the captures are complete, stop the topology and delete its persisted
+volume with this exact command:
+
+```bash
+docker compose --env-file .env.cloud -f docker-compose.cloud.yml down -v --remove-orphans
+```
+
+Revoke the temporary access-policy token in Grafana Cloud immediately and
+record the successful revocation time in UTC in the evidence notes. Then delete
+both local secret inputs without displaying their contents:
+
+```bash
+rm -f secrets/grafana-cloud-api-key.txt .env.cloud
+```
+
+If `GRAFANA_CLOUD_API_KEY_FILE` was deliberately changed from the documented
+path, delete that exact file through the file manager or editor instead; do not
+expand or print it in a shell command. Finally run these non-secret Git checks:
+
+```bash
+git check-ignore -v .env.cloud secrets/grafana-cloud-api-key.txt
+git status --short
+git log --all -- .env.cloud secrets/grafana-cloud-api-key.txt
+```
+
+The ignore check must identify the repository ignore rules, status must not
+show either credential input, and the history query must produce no commits for
+either path. Do not paste the real token into a search command or transcript.
+Record the stack shutdown, token revocation, local deletion, and Git-audit
+results as separate checklist items.
 
 ## Product implication
 
