@@ -3,17 +3,17 @@
 Date: 2026-09-21<br>
 Application runtime: Node.js 24.21.0 in the pinned container image
 
-This record separates setup evidence observed on the current workstation from
-the two committed, volume-clean publication runs and optional Grafana Cloud
-check still required. It is not a substitute for the dated screenshot gallery
-and walkthrough video.
+This record separates the initial workstation setup evidence from the two
+committed, volume-clean publication runs recorded below. The optional Grafana
+Cloud check, dated screenshot gallery, and walkthrough video are still
+required for their corresponding publication claims.
 
 ## Status taxonomy
 
 | Evidence layer | Status | What the status means |
 | --- | --- | --- |
 | Node processes and mock OTLP/HTTP receiver | **Observed locally** | The real instrumentation preloads sent non-empty protobuf requests to each expected signal endpoint; response trace IDs and structured stdout supplied the correlation evidence recorded below |
-| Docker, Alloy, and local Grafana/LGTM | **Observed locally — setup run** | The real pipeline started and repeated bounded probes reached Tempo, Loki, and Prometheus through Alloy; committed volume-clean reruns, failure recovery, and UI captures remain pending |
+| Docker, Alloy, and local Grafana/LGTM | **Observed locally — two volume-clean runs** | The committed pipeline reproduced from removed volumes and no-cache builds; three isolated local failures were diagnosed and followed by fresh successful recovery probes. UI captures remain pending |
 | Grafana Cloud | **Pending — unobserved** | Hosted authentication, export, receipt, attribution, correlation, and downstream product views have not been executed |
 
 `Observed` is reserved for evidence produced by an actual recorded run.
@@ -151,108 +151,85 @@ journey, as intended:
 }
 ```
 
-## Publication clean-run environment and provenance template
+## Publication volume-clean runs
 
-The following values must be recorded from a fresh clone or copied clean
-directory before any Docker result is promoted to observed evidence. `Not run`
-is deliberately explicit; it must not be replaced with an expected value.
+Both publication runs used source commit
+`5cbd086da453659104b9f58eb007ba6557d1356d`. Each began with
+`docker compose down -v --remove-orphans`, rebuilt without cache, started the
+same `docker-compose.yml`, and used a new synthetic probe. The second run did
+not reuse the first run's containers or volumes.
 
 | Field | Clean run 1 | Clean run 2 |
 | --- | --- | --- |
-| Status | Not run | Not run |
-| Start/end timestamp | Not run | Not run |
-| UTC offset and named timezone | Not run | Not run |
-| Operating system and version | Not run | Not run |
-| Docker Desktop version, if applicable | Not run | Not run |
-| Docker Engine client/server versions | Not run | Not run |
-| Docker Compose version | Not run | Not run |
-| Node.js version | Not run | Not run |
-| Source commit SHA | Not run | Not run |
-| `git status --short` empty | Not run | Not run |
-| Compose project name and files | Not run | Not run |
-| Instrumentation path and scenario | Not run | Not run |
-| Application image ID | Not run | Not run |
-| Alloy image tag and digest | Not run | Not run |
-| LGTM image tag and digest | Not run | Not run |
-| Synthetic probe ID | Not run | Not run |
-| Bounded backend query window | Not run | Not run |
-| Operator and capture-log reference | Not run | Not run |
+| Status | Passed | Passed |
+| Run window | 2026-09-21 19:22:08–19:26:58 UTC+02:00 | 2026-09-21 19:45:03–19:47:51 UTC+02:00 |
+| Timezone | Europe/Paris (`Romance Standard Time`) | Europe/Paris (`Romance Standard Time`) |
+| Host | Windows 10, build 19045; WSL 2.7.14.0 | Windows 10, build 19045; WSL 2.7.14.0 |
+| Docker | Desktop 4.92.0.240144; client/server Engine 29.8.0; Compose 5.5.1 | Desktop 4.92.0.240144; client/server Engine 29.8.0; Compose 5.5.1 |
+| Node.js | Application image 24.21.0; workstation 22.18.0 | Application image 24.21.0; workstation 22.18.0 |
+| Source commit | `5cbd086da453659104b9f58eb007ba6557d1356d` | `5cbd086da453659104b9f58eb007ba6557d1356d` |
+| Compose project / path | `otel-onboarding-case-study`; explicit SDK, `normal` | `otel-onboarding-case-study`; explicit SDK, `normal` |
+| Application image | `sha256:f2d9c798e773a015cecbc5d2dfedb504a568ec7adedc238714b743e308619087` | `sha256:aee1edcccc82509c9a6a769e46e88d8cea0ca4bb4824c2e14ceebba4606a41e0` |
+| Alloy image | `grafana/alloy:v1.19.2`, digest `sha256:b8ec653c44235fbe910879145dac3597d66b0aaecf60bcbbe82580767771a839` | Same pinned image and digest |
+| LGTM image | `grafana/otel-lgtm:0.33.1`, digest `sha256:d6c52678ab5b7144f27ae569fd778608121c0f4a10eb411983750a0d67c1fbe3` | Same pinned image and digest |
+| Probe ID | `pipeline-20260921172436-947be4d9` | `pipeline-20260921174700-cbe54c51` |
+| Trace ID | `a1c247af05be92ee31f81f2bd3f5c3cf` | `fee67cafec81fcf5c1dee5a72478b412` |
 
-Follow Phases 0–5 in the [demo runbook](../../DEMO.md). Clean run 1 must begin
-with `docker compose down -v --remove-orphans`, a no-cache build, and a fresh
-probe. Clean run 2 must again remove volumes, start the unchanged commit, use a
-different probe, and repeat the complete evidence matrix. A second run is not a
-pass if it depends on a volume, container, image-local edit, or undocumented
-manual step retained from the first run.
+### First-attempt startup finding
 
-## Per-signal Alloy-to-backend evidence template
+The initial clean attempt exposed a startup-readiness problem rather than an
+application or telemetry failure. LGTM's native health check used a 30-second
+interval, three retries, and no start grace, so Compose marked it unhealthy
+before first-start Grafana became ready at approximately 169 seconds. Commit
+`5cbd086da453659104b9f58eb007ba6557d1356d` retained the same health script but
+configured a 10-second interval, 5-second timeout, 12 retries, and a 240-second
+`start_period`. Both complete volume-clean runs above then passed.
 
-Complete one row per signal for each clean run. Record the exact telemetry
-counter names and labels exposed by the pinned Alloy image, their before/after
-values, and the corresponding screenshot or log excerpt. Do not infer signal
-delivery from the component graph.
+## Observed Alloy-to-backend evidence
 
-| Signal | Receiver accepted | Processor handled | Exporter sent | Backend returned probe | Verdict |
-| --- | --- | --- | --- | --- | --- |
-| Traces | Pending — unobserved | Pending — unobserved | Pending — unobserved | Pending — unobserved | Pending |
-| Metrics | Pending — unobserved | Pending — unobserved | Pending — unobserved | Pending — unobserved | Pending |
-| Logs | Pending — unobserved | Pending — unobserved | Pending — unobserved | Pending — unobserved | Pending |
+Processor debug activity was observed for all three signals in both runs. The
+pinned Alloy build did not expose exporter failed-send or enqueue-failure
+series, so those checks remain **unavailable**, not inferred as zero. Receiver
+refused-unit deltas were zero in every row.
 
-The minimum evidence for each row is:
+| Run | Signal | Receiver accepted / refused | Exporter sent | Bounded backend result |
+| --- | --- | --- | --- | --- |
+| 1 | Traces | `+7 / +0` | `+8` | Tempo returned five connected spans for trace `a1c247af05be92ee31f81f2bd3f5c3cf`; required identity assertions passed |
+| 1 | Metrics | `+22 / +0` | `+22` | Prometheus returned exact `+1` request and duration-count deltas; the cumulative post-loadgen series `demo_checkout_errors_total` had value `3` |
+| 1 | Logs | `+3 / +0` | `+3` | Loki returned three correlated checkout/inventory records carrying the probe trace ID |
+| 2 | Traces | `+7 / +0` | `+8` | Tempo returned five connected spans for trace `fee67cafec81fcf5c1dee5a72478b412`; required identity assertions passed |
+| 2 | Metrics | `+10 / +0` | `+10` | Prometheus returned exact `+1` request and duration-count deltas; the cumulative post-loadgen series `demo_checkout_errors_total` had value `2` |
+| 2 | Logs | `+3 / +0` | `+3` | Loki returned three correlated checkout/inventory records carrying the probe trace ID |
 
-- receiver accepted-unit delta and no corresponding refused-unit increase;
-- evidence after the memory-limiter and batch processors, plus no processor
-  refusal or drop increase;
-- exporter sent-unit delta and no failed-send increase;
-- a bounded backend query returning the fresh probe or its declared service and
-  run window.
+In both runs the application, Alloy readiness and health endpoints, and Grafana
+health endpoint returned healthy results. Backend queries confirmed
+`service.name=checkout-api`, `service.namespace=otel-onboarding`,
+`service.version=1.0.0`, and `deployment.environment.name=local`. Tempo
+preserved the checkout/inventory parent-child journey, and Loki preserved the
+same trace ID across the three structured records. These are machine-query and
+counter observations; no screenshot or video evidence is claimed.
 
-For traces, preserve checkout/inventory topology. For metrics, preserve results
-for `demo.checkout.requests`, `demo.checkout.errors`, and
-`demo.checkout.duration`. For logs, preserve the structured checkout record and
-its trace ID. The aggregate `received` result may be marked true only after
-`received.traces`, `received.metrics`, and `received.logs` are all confirmed.
+## Observed local failures and recovery
 
-## Healthy-state record template
+Each failure was introduced separately against a healthy baseline. After each
+diagnosis, the override was removed and a new end-to-end probe—not an earlier
+successful result—established recovery.
 
-For each clean run, attach dated evidence for:
+| Scenario | Observed failure and highest validated state | Diagnosis | Fresh recovery evidence |
+| --- | --- | --- | --- |
+| Bad OTLP endpoint — `fault-bad-endpoint-20260921T1929`, trace `a579a34cac9629b0b0b487728dc78323` | **Highest validated state: Configured.** The application `/health` remained `200`, but export to port `14318` logged `ECONNREFUSED`. The application-receiver accepted-span series was absent, so Alloy receipt was not established; Tempo returned `404` and Loki returned no records. The verifier exited nonzero while waiting for the app receiver. | The override changed `OTEL_EXPORTER_OTLP_ENDPOINT` to `http://alloy:14318`; application health therefore did not imply telemetry receipt. Exporter failed-send and enqueue-failure series were unavailable, so no zero-value claim is made. | Removing the override and restarting produced probe `pipeline-20260921173314-60dad3e2`, trace `5ac909cc947ce1d5e6565851959993cf`; the full pipeline verifier passed. |
+| Missing service name — `fault-missing-name-20260921T1935`, trace `0ad488d689c1612bf1b152e537b2369f` | **Highest validated state: Received.** The response reported `serviceName: null`. Tempo, Loki, and Prometheus received the signals under the SDK fallback `unknown_service:node`; the verifier timed out while seeking the exact trace in Tempo under the intended identity. | The override set `OTEL_SERVICE_NAME` to an empty string, so a healthy export was operationally hard to find under the intended service identity. | Removing the override and restarting produced probe `pipeline-20260921173842-85696b18`, trace `aaac3f20568c64ce58afa749c8de2d8d`; the full pipeline verifier passed with intended identity restored. |
+| Broken context propagation — `fault-broken-context-20260921T1941` | **Highest validated state: Attributed.** Checkout trace `6f38366fe271fe54da49faae1f81524f` and inventory trace `95ef22a03b68d43c95b272767e84bba0` differed. Tempo split the operations into separate traces and Loki records carried split trace IDs. A direct verifier probe also returned a checkout/inventory mismatch (`0fefaae5a6319e312a9d9f06af9b3446` versus `d8517ad40fa887107d5a5d55c3cab162`). | The override selected `DEMO_SCENARIO=broken-context-propagation`; component health alone could not establish journey integrity. | Removing the override and restarting produced probe `pipeline-20260921174317-ae01d65f`, trace `02a4d744d35ea36e053f4ba91ae42799`; the full pipeline verifier passed with one connected journey restored. |
 
-1. application `/health` result and Compose service state;
-2. all three signal rows in the pipeline matrix;
-3. exact service name, namespace, version, and environment;
-4. checkout and inventory in the expected parent-child trace relationship;
-5. a structured log carrying the same trace ID;
-6. request, error, and duration metrics answering the declared operating
-   question.
+Exporter failed-send and enqueue-failure series were unavailable during these
+checks; processor debug activity was observed. The failures above are based on
+the actual application, Alloy, and backend responses rather than expected
+scenario text.
 
-Each evidence item must include run ID, probe ID, source SHA, timestamp/timezone,
-image versions, product surface, query/filter, and capture filename. The setup
-run above has machine-query evidence but no dated UI captures or committed
-clean-run provenance attached.
-
-## Failure and recovery record template
-
-Reset to a proven healthy baseline and use a unique probe for each failure. Do
-not reuse an earlier successful record as proof that a later recovery worked.
-
-| Field | Recorded value |
-| --- | --- |
-| Scenario and hypothesis | Pending — unobserved |
-| Exact change introduced | Pending — unobserved |
-| What remained healthy | Pending — unobserved |
-| Exact failed boundary and signal | Pending — unobserved |
-| Actual status/error text, sanitized | Pending — unobserved |
-| Highest validated onboarding state | Pending — unobserved |
-| Diagnosis and product implication | Pending — unobserved |
-| Recovery action | Pending — unobserved |
-| Fresh recovery probe ID | Pending — unobserved |
-| Receiver → processor → exporter → backend recovery evidence | Pending — unobserved |
-| Restored identity and correlation evidence | Pending — unobserved |
-
-Expected scenario outcomes belong in the scenario documentation. Only actual
-run results belong in this table. If an invalid Cloud token returns a status
-other than the anticipated 401/403, record the exact sanitized response instead
-of rewriting it to match the hypothesis.
+The maturity-state labels above are analyst classifications derived from the
+recorded evidence. The current verifier emits concrete failure text and a
+nonzero exit; it does not emit the product taxonomy codes proposed elsewhere in
+this case study.
 
 ## Screenshot and video status
 
@@ -267,12 +244,9 @@ runbook](../../DEMO.md#approximately-three-minute-video-outline).
 
 ## Claims still prohibited
 
-Until the clean-run templates above are completed, this repository does not
-claim that:
+The local clean runs and isolated failure recoveries above do not establish any
+hosted or visual evidence. This repository does not claim that:
 
-- the observed setup run came from a committed clean clone;
-- a second volume-clean execution reproduced the first;
-- the local failure scenarios were diagnosed and recovered in the live stack;
 - Grafana Cloud authentication or hosted receipt succeeded;
 - a curated Grafana Cloud Application Observability surface was activated;
 - screenshots or video were captured from the implementation.

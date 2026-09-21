@@ -198,9 +198,11 @@ Failure scenarios change one variable at a time and preserve the healthy default
 | Broken context propagation | Deliberate async/outbound boundary in a scenario route | Export and identity remain healthy | Correlation check |
 | Invalid Grafana Cloud credentials | Deliberately invalid token on the Alloy-to-Cloud route | Workload and application-to-Alloy receipt remain healthy | Collector authentication or authorization check |
 
-The first three scenarios are local and executable. The credential scenario is
-a guided Cloud exercise and remains unproven until it is run against a
-disposable stack with sanitized evidence.
+The first three scenarios are local and executable. Each was run independently
+at commit `5cbd086`; the intended failed boundary and a fresh successful
+recovery probe were observed. The credential scenario is a guided Cloud
+exercise and remains unproven until it is run against a disposable stack with
+sanitized evidence.
 
 Scenarios use documented Compose overrides or environment values and never
 require an in-place edit to the healthy configuration. Return to the default
@@ -209,11 +211,12 @@ demo data cannot masquerade as recovery evidence.
 
 ## Reliability and data-quality invariants
 
-The setup run provides initial runtime evidence for a subset of these
-acceptance requirements, with the exact observed boundary recorded in the
-[runtime verification record](evidence/runtime-verification.md). The demo does
-not promote the full set to repeatable acceptance claims until the clean-run
-record and isolated failure-recovery evidence are complete:
+The setup run and two volume-clean executions of commit `5cbd086` provide
+machine evidence for the local acceptance requirements below, with the exact
+observed boundaries recorded in the [runtime verification
+record](evidence/runtime-verification.md). The three executable local failure
+scenarios were also isolated and recovered. This does not supply Grafana Cloud
+or visual product evidence:
 
 - application startup is not indefinitely blocked by an unavailable telemetry backend;
 - export failures are visible and rate-limited rather than silently swallowed or logged in a tight loop;
@@ -221,9 +224,9 @@ record and isolated failure-recovery evidence are complete:
 - signal resources agree on service name, namespace, version, and environment;
 - validation traffic is distinguishable without high-cardinality metric labels;
 - telemetry contains no credentials, authorization headers, request bodies, or real personal data;
-- a pipeline-targeted validator returns nonzero for a scenario failure even when
-  the application still returns HTTP 200; rerunning that validator from the
-  committed clean state and against each failure mode remains a publication gate;
+- a pipeline-targeted validator returns nonzero for a local scenario failure
+  even when the application still returns HTTP 200, and a fresh verifier passes
+  after the healthy configuration is restored;
 - stopping the stack attempts a bounded flush and does not promise delivery it cannot verify.
 
 ## Security and privacy model
@@ -244,32 +247,39 @@ The reference implementation is not a security hardening guide. It demonstrates 
 
 The primary demonstration uses the local LGTM stack so a reviewer can reproduce
 the full signal and query journey without an account or token. The recorded
-setup run demonstrates local receipt, identity, and correlation. Two
-volume-clean reruns, isolated failure recovery, and the capture checklist remain
-the gates for publication-grade reproducibility and usefulness claims; the exact
-evidence boundary is recorded in the [runtime verification
-record](evidence/runtime-verification.md).
+setup run plus two volume-clean runs of commit `5cbd086` demonstrate local
+receipt, identity, and correlation through the real
+Alloy-to-Tempo/Loki/Prometheus path. All three executable local failure and
+recovery scenarios were also observed. The local machine-verification gate is
+complete; curated screenshots, the walkthrough video, a public GitHub remote,
+and CI evidence on the public commit remain pending.
 
 The optional Grafana Cloud Compose variant uses the same application-to-Alloy
-path and replaces the backend exporter. Hosted screenshots are required only
-for claims about Grafana Cloud ingestion, authentication, or activation; the
-credential-free local path still requires its own end-to-end captures before
-submission.
+path and replaces the backend exporter. Cloud execution and hosted screenshots
+are still required for claims about Grafana Cloud ingestion, authentication, or
+activation. The credential-free local path still requires curated UI captures
+before publication, but those captures are not prerequisites for the completed
+machine-verification claims above.
 
 Kubernetes, browser, mobile, and multi-service variants are deliberately deferred. The maturity model and agent contract should transfer to them; the implementation details will not.
 
 ## Architecture acceptance checklist
 
-- [ ] The default stack starts through one documented command.
-- [ ] Exactly one instrumentation mode is active.
-- [ ] The application has no cloud credential.
-- [ ] Alloy receives all implemented signals and exposes diagnostic evidence.
-- [ ] External export uses runtime-injected credentials.
-- [ ] The synthetic probe creates the documented trace shape, log event, and metric change.
-- [ ] Expected resource identity is consistent across signals.
-- [ ] Each failure scenario changes one intended condition and is reversible.
-- [ ] No public file or screenshot contains a secret, account identifier, or real user data.
-- [ ] The demo can name the highest useful-observability level it has actually proven.
+- [x] The default stack starts through one documented command.
+- [x] Exactly one instrumentation mode is active.
+- [x] The application has no cloud credential.
+- [x] Alloy receives all implemented signals and exposes diagnostic evidence.
+- [ ] Grafana Cloud export is observed using runtime-injected credentials.
+- [x] The synthetic probe creates the documented trace shape, log event, and metric change.
+- [x] Expected resource identity is consistent across signals.
+- [x] Each of the three executable local failure scenarios changes one intended condition and is reversible.
+- [ ] The invalid-Cloud-credentials scenario is observed and recovered.
+- [x] The committed source scan contains no secret, account identifier, or real user data.
+- [ ] Curated screenshots and the walkthrough video pass the public-safety review.
+- [x] The bounded verifier returns nonzero for each local fault; the supporting
+  application, Alloy, and backend evidence localizes the failed gate.
+- [ ] The curated visual demo names the highest useful-observability level it has actually proven.
+- [ ] The public GitHub commit exists and its CI workflow passes.
 
 ## References
 

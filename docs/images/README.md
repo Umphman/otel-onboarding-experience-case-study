@@ -108,7 +108,7 @@ reproduce the claim.
 
 For `01-alloy-receipt.png` and any `01a`–`01c` source captures, also record this
 matrix in the [verification
-record](../evidence/runtime-verification.md#per-signal-alloy-to-backend-evidence-template):
+record](../evidence/runtime-verification.md#observed-alloy-to-backend-evidence):
 
 | Signal | Receiver accepted/refused | Processor handled/refused or dropped | Exporter sent/failed | Backend result |
 | --- | --- | --- | --- | --- |

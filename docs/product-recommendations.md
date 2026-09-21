@@ -7,11 +7,15 @@ Turn onboarding from a sequence of copy-paste instructions into a verified journ
 These recommendations are hypotheses based on the synthetic reference implementation. They require customer research and product data before broad rollout.
 
 The default reference path exercises the journey against a credential-free
-local LGTM stack. An end-to-end setup run is recorded in the [runtime
-verification record](evidence/runtime-verification.md); two volume-clean reruns,
-isolated failure recovery, and curated captures remain publication gates.
-Grafana Cloud is an optional hosted variant, so cloud authentication
-recommendations are evaluated separately from the local path.
+local LGTM stack. The [runtime verification
+record](evidence/runtime-verification.md) records two volume-clean Docker runs
+of commit `5cbd086`, real Alloy-to-Tempo/Loki/Prometheus proof, and observed
+failure plus fresh recovery for all three executable local scenarios. This
+completes the local machine-verification gate. Grafana Cloud execution, curated
+screenshots, the walkthrough video, a public GitHub remote, and CI on the public
+commit remain pending. Cloud authentication recommendations are therefore
+evaluated separately, and the broader product recommendations remain
+hypotheses requiring customer research and product data.
 
 ## Desired outcome
 

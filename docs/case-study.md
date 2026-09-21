@@ -152,7 +152,12 @@ Failures are part of the artifact because a happy-path screenshot does not demon
 | Broken context propagation | Trace and log exist but cannot be joined, or a downstream span starts a new trace | Context is not propagated across an async or outbound boundary | Message identifies the broken boundary and shows trace-ID mismatch without dumping payloads | One probe produces the expected connected trace and correlated log at Level 4 |
 | Invalid Cloud credentials | Expected: the local workload remains healthy while hosted export returns an authentication or authorization rejection, commonly 401/403 | Token, instance ID, or write scope is invalid | Message names the authenticated Cloud-export boundary and keeps credential values redacted | A fresh probe reaches the intended stack after restoring a correctly scoped token |
 
-Each scenario should be reversible, isolated from the healthy default, and documented with the command or configuration switch that activates it. Failure output is part of the user experience and should be captured alongside the fix.
+The first three scenarios were executed independently at commit `5cbd086`; the
+intended failure and a fresh successful recovery were observed for each. The
+invalid-Cloud-credentials scenario remains an unexecuted, expected outcome.
+Each scenario should be reversible, isolated from the healthy default, and
+documented with the command or configuration switch that activates it. Failure
+output is part of the user experience and should be captured alongside the fix.
 
 ## Validation strategy
 
@@ -179,6 +184,8 @@ This artifact is designed to test five hypotheses:
 5. A machine-readable contract lets coding agents complete routine setup autonomously while preserving meaningful human control.
 
 The metrics and experiments for these hypotheses are defined in [product-recommendations.md](product-recommendations.md).
+Local implementation verification does not validate these broader product
+hypotheses; they remain pending customer research and product data.
 
 ## Tradeoffs and decisions
 
@@ -204,7 +211,14 @@ The current case study does not provide evidence from real customer sessions, la
 
 All services, requests, identities, and telemetry in this repository are synthetic. Screenshots must be captured from a dedicated demonstration stack and reviewed using [images/README.md](images/README.md). Secrets, account identifiers, proprietary source code, real user data, and private interview materials are excluded.
 
-AI tools accelerated scaffolding, implementation, test generation, and editing. The repository author owns the product decisions, must be able to explain every decision, and must review every command and captured result. The setup run demonstrates end-to-end local Grafana behavior; publication-grade reproducibility is not claimed until the two clean Docker acceptance runs, isolated failure recovery, and evidence capture are complete.
+AI tools accelerated scaffolding, implementation, test generation, and editing.
+The repository author owns the product decisions, must be able to explain every
+decision, and must review every command and captured result. Two volume-clean
+Docker runs of commit `5cbd086` and all three local failure/recovery scenarios
+complete the local machine-verification gate, including real
+Alloy-to-Tempo/Loki/Prometheus evidence. Grafana Cloud execution, curated
+screenshots, the walkthrough video, a public GitHub remote, and CI on the public
+commit remain pending; no UI-proof or production-readiness claim is made.
 
 ## References
 

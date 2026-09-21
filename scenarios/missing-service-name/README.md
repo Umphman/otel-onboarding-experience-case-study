@@ -9,18 +9,23 @@ and downstream activation unreliable.
 ## Run
 
 ```bash
-docker compose -f docker-compose.yml -f scenarios/missing-service-name/compose.override.yml up --build
+docker compose -f docker-compose.yml -f scenarios/missing-service-name/compose.override.yml down -v --remove-orphans
+docker compose -f docker-compose.yml -f scenarios/missing-service-name/compose.override.yml up -d --wait lgtm alloy app
 ```
 
-## Expected evidence
+Starting only `lgtm`, `alloy`, and `app` keeps `loadgen` out of the evidence
+window so the failure probe remains attributable.
 
-- Telemetry continues to arrive.
-- With the pinned OpenTelemetry Node SDK, the service is attributed to
-  `unknown_service:<process.argv0>` rather than `checkout-api`. Because
-  `process.argv0` is runtime-specific, the clean Docker capture must record the
-  exact observed value before submission instead of treating a workstation path
-  as the portable expected value.
-- A search or dashboard scoped to `checkout-api` appears empty.
+## Observed local evidence
+
+- Telemetry continued to arrive.
+- With the pinned OpenTelemetry Node SDK and container runtime, Tempo, Loki, and
+  Prometheus attributed the failure probe to `unknown_service:node` rather than
+  `checkout-api`.
+- The intended `checkout-api` identity was absent for that failure probe.
+
+The dated probe identifiers and backend results are in the [runtime verification
+record](../../docs/evidence/runtime-verification.md).
 
 `test/resource.test.js` asserts the SDK's exact `unknown_service:${process.argv0}`
 rule across platforms. Revalidate it when upgrading the SDK; the product
@@ -28,8 +33,18 @@ invariant is that the intended identity is absent.
 
 ## Diagnosis and recovery
 
-Set `OTEL_SERVICE_NAME=checkout-api`, restart the app, and verify the resource
-attribute on a fresh trace, log, and metric.
+Restore the default identity configuration with a volume-clean two-file
+shutdown, start the default services without `loadgen`, and run a fresh bounded
+verifier probe:
+
+```bash
+docker compose -f docker-compose.yml -f scenarios/missing-service-name/compose.override.yml down -v --remove-orphans
+docker compose -f docker-compose.yml up -d --wait lgtm alloy app
+npm run verify:pipeline
+```
+
+The recorded recovery restored `service.name=checkout-api` across the required
+backends and restored the expected trace/log correlation.
 
 ## Product implication
 

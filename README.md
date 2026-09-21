@@ -12,11 +12,16 @@ onboarding with Grafana Alloy.
 | Tier | Status | Evidence boundary |
 |---|---|---|
 | Node processes + mock OTLP/HTTP | **Verified 2026-09-21** | Both configured variants sent non-empty protobuf requests to the trace, metric, and log endpoints; structured stdout proved healthy log correlation and the intended broken-case split. |
-| Docker + Alloy + local Grafana | **Verified setup run 2026-09-21** | Repeated bounded probes crossed the real Alloy pipeline and were queried in Tempo, Loki, and Prometheus; committed clean reruns and UI captures remain pending. |
+| Docker + Alloy + local Grafana | **Verified — two volume-clean runs 2026-09-21** | At commit `5cbd086`, two runs rebuilt from removed volumes and proved the real Alloy-to-Tempo/Loki/Prometheus path; all three executable local failure scenarios were observed and followed by fresh successful recovery probes. |
 | Grafana Cloud | **Pending** | Route and authentication exercise documented, not executed. |
 
 See the [runtime verification record](docs/evidence/runtime-verification.md) for tests; the
 [capture checklist](docs/images/) defines remaining proof.
+
+Local machine verification is complete for the committed implementation. The
+curated screenshot set, walkthrough video, public GitHub remote, and CI result
+on that public commit remain pending and are not claimed here. Grafana Cloud
+proof and the broader product hypotheses also remain unverified.
 
 ```mermaid
 flowchart LR
@@ -100,8 +105,10 @@ Receipt subchecks preserve the six-stage model while exposing partial delivery.
 | [Broken context propagation](scenarios/broken-context-propagation/) | Endpoints and span volume | Journey continuity | Checkout and inventory return to one trace. |
 | [Invalid Cloud credentials](scenarios/invalid-cloud-credentials/) | Local workload and receiver | Authenticated Cloud export | The expected authentication rejection stops and a new probe appears in the intended stack. |
 
-The first three are executable local scenarios. The authentication scenario is a
-Cloud-only guided validation and is not claimed as executed in this environment.
+The first three scenarios were executed independently at commit `5cbd086`; the
+intended failure and a fresh successful recovery probe were observed for each.
+The authentication scenario is a Cloud-only guided validation and is not
+claimed as executed in this environment.
 
 ## TTUT: definition and guardrails
 

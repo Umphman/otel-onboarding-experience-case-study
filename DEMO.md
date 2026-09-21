@@ -6,12 +6,13 @@ Grafana Cloud route requires a disposable stack and a temporary token.
 
 ## Evidence status and language
 
-The Node/mock-receiver checks and one local Docker setup run are observed in the
-[runtime verification record](docs/evidence/runtime-verification.md). The setup
-run includes Alloy counter deltas and Tempo, Loki, and Prometheus queries, but
-it did not come from a recorded commit. Both publication clean runs, failure
-and recovery captures, the screenshot/video set, and Grafana Cloud remain
-**unobserved**. Those sections below remain an execution and capture contract.
+The Node/mock-receiver checks, two volume-clean Docker runs, and all three local
+failure-and-recovery scenarios are observed in the [runtime verification
+record](docs/evidence/runtime-verification.md). The local publication runs came
+from the same recorded implementation commit and include Alloy counter deltas
+plus Tempo, Loki, and Prometheus queries. The screenshot/video set and Grafana
+Cloud remain **unobserved**; those sections below remain an execution and
+capture contract.
 
 Use these labels consistently:
 
@@ -31,7 +32,7 @@ Run from a fresh clone or a copied clean directory, not the development working
 tree. Keep credentials outside the repository.
 
 Before startup, record the following in the [verification
-record](docs/evidence/runtime-verification.md#clean-run-environment-and-provenance-template):
+record](docs/evidence/runtime-verification.md#publication-volume-clean-runs):
 
 - operating system and version;
 - Docker Desktop, Docker Engine, and Docker Compose versions;
@@ -213,22 +214,23 @@ Hypothesis
 -> product implication
 ```
 
-| Scenario | Expected result, not yet observed in Docker | Required recovery proof |
+| Scenario | Observed local result | Recovery status |
 | --- | --- | --- |
-| [Bad OTLP endpoint](scenarios/bad-otlp-endpoint/) | Export connection failure while the workload remains healthy | A fresh probe traverses receiver → processors → exporter → backend after restoring port `4318` |
-| [Missing service name](scenarios/missing-service-name/) | Signals use the SDK's exact `unknown_service:<process.argv0>` fallback | Fresh signals carry `service.name=checkout-api` through every required backend |
-| [Broken context propagation](scenarios/broken-context-propagation/) | Checkout and inventory use different trace IDs | A fresh checkout returns to one trace and its log carries that trace ID |
-| [Invalid Cloud credentials](scenarios/invalid-cloud-credentials/) | Hosted export authentication fails while the local workload and app-to-Alloy boundary remain healthy | Authentication errors stop and a fresh probe appears in the intended Cloud stack |
+| [Bad OTLP endpoint](scenarios/bad-otlp-endpoint/) | The workload stayed healthy while the application exporter received `ECONNREFUSED` at the deliberately wrong port; the failure probe produced no fresh Alloy receipt or Tempo/Loki result | **Observed:** after restoring port `4318`, a fresh pipeline-verifier probe reached Alloy and all three local backends |
+| [Missing service name](scenarios/missing-service-name/) | Signals arrived as `unknown_service:node` across Tempo, Loki, and Prometheus rather than as `checkout-api` | **Observed:** a fresh pipeline-verifier probe restored the intended identity in every required backend |
+| [Broken context propagation](scenarios/broken-context-propagation/) | Checkout and inventory remained successful but appeared under different backend trace IDs, with correspondingly split log trace IDs | **Observed:** a fresh pipeline-verifier probe restored one connected trace and same-trace structured logs |
+| [Invalid Cloud credentials](scenarios/invalid-cloud-credentials/) | **Pending — unobserved:** hosted export is expected to fail authentication while the local workload and app-to-Alloy boundary remain healthy | Required if run: authentication errors stop and a fresh probe appears in the intended Cloud stack |
 
-The first three are local executable scenarios. The Cloud case is a guided
-exercise and remains **unobserved**.
+The first three local scenarios and their fresh-probe recoveries are recorded in
+the [runtime verification record](docs/evidence/runtime-verification.md). The
+Cloud case is a guided exercise and remains **unobserved**.
 
 For the bad-endpoint demonstration, remove demo volumes, start only the override,
 and record the exact exporter error:
 
 ```bash
-docker compose down -v --remove-orphans
-docker compose -f docker-compose.yml -f scenarios/bad-otlp-endpoint/compose.override.yml up -d --build --wait
+docker compose -f docker-compose.yml -f scenarios/bad-otlp-endpoint/compose.override.yml down -v --remove-orphans
+docker compose -f docker-compose.yml -f scenarios/bad-otlp-endpoint/compose.override.yml up -d --wait lgtm alloy app
 docker compose -f docker-compose.yml -f scenarios/bad-otlp-endpoint/compose.override.yml ps
 docker compose -f docker-compose.yml -f scenarios/bad-otlp-endpoint/compose.override.yml logs --since 10m app alloy
 ```
@@ -238,7 +240,8 @@ and show which pipeline hop fails. Then return to a volume-clean default stack:
 
 ```bash
 docker compose -f docker-compose.yml -f scenarios/bad-otlp-endpoint/compose.override.yml down -v --remove-orphans
-docker compose up -d --build --wait
+docker compose -f docker-compose.yml up -d --wait lgtm alloy app
+npm run verify:pipeline
 ```
 
 Recovery is observed only when a **new** probe restores all four pipeline links,
@@ -258,7 +261,8 @@ start from the unchanged recorded commit:
 
 ```bash
 docker compose down -v --remove-orphans
-docker compose up -d --build --wait
+docker compose build --no-cache
+docker compose up -d --wait
 docker compose ps
 curl --fail --silent --show-error http://localhost:8080/health
 npm test
@@ -349,15 +353,15 @@ public-safety requirements. Do not publish a placeholder as evidence.
 
 ## Publication gate
 
-- [ ] Complete both volume-clean Docker runs from one recorded commit.
-- [ ] Add and pass a pipeline-targeted verifier; `verify:signals` remains a
+- [x] Complete both volume-clean Docker runs from one recorded commit.
+- [x] Add and pass a pipeline-targeted verifier; `verify:signals` remains a
   mock-receiver check and does not satisfy this item.
 - [ ] Capture eight dated images: the six healthy proof categories plus failure
   and recovery states.
 - [ ] Record and link the approximately three-minute walkthrough above the fold.
 - [ ] Replace README capture-contract links with the actual proof.
 - [x] Keep Grafana Cloud explicitly unobserved unless the optional run occurs.
-- [ ] Record exact OS, Docker, Compose, Node, image, commit, and timezone values.
+- [x] Record exact OS, Docker, Compose, Node, image, commit, and timezone values.
 - [x] Scope automatic-instrumentation and identity-contract claims to this
   configured reference workload.
 - [x] Remove absolute workstation paths and verify all relative links.
@@ -365,5 +369,5 @@ public-safety requirements. Do not publish a placeholder as evidence.
 - [ ] Have the author review first-person decisions and authorship in their own
   voice.
 - [ ] Create the public GitHub repository from a clean history.
-- [ ] Scan the resulting commit history for secrets and private material.
+- [x] Scan the current local commit history for secrets and private material.
 - [ ] Tag the evidence-bearing release, for example `v1.0.0-case-study`.
