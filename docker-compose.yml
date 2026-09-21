@@ -71,6 +71,12 @@ services:
       - "127.0.0.1:3000:3000"
     volumes:
       - lgtm-data:/data
+    healthcheck:
+      test: ["CMD", "/otel-lgtm/docker/healthcheck.sh"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 240s
     restart: unless-stopped
 
 volumes:
