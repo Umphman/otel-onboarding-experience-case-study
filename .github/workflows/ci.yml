@@ -1,0 +1,60 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  node:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run verify:signals
+
+  compose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build --tag otel-onboarding-case-study:ci .
+      - run: docker compose -f docker-compose.yml config --quiet
+      - run: docker compose -f docker-compose.cloud.yml config --quiet
+        env:
+          GRAFANA_CLOUD_OTLP_ENDPOINT: https://example.invalid/otlp
+          GRAFANA_CLOUD_INSTANCE_ID: ci-placeholder
+          GRAFANA_CLOUD_API_KEY_FILE: ./secrets/README.md
+      - run: docker compose -f docker-compose.yml -f scenarios/bad-otlp-endpoint/compose.override.yml config --quiet
+      - run: docker compose -f docker-compose.yml -f scenarios/missing-service-name/compose.override.yml config --quiet
+      - run: docker compose -f docker-compose.yml -f scenarios/broken-context-propagation/compose.override.yml config --quiet
+      - run: docker compose -f docker-compose.yml -f instrumentation/auto-instrumentation/compose.override.yml config --quiet
+      - name: Assert scenario overrides resolve as intended
+        shell: bash
+        run: |
+          test "$(docker compose -f docker-compose.yml -f scenarios/bad-otlp-endpoint/compose.override.yml config --format json | jq -r '.services.app.environment.OTEL_EXPORTER_OTLP_ENDPOINT')" = "http://alloy:14318"
+          test "$(docker compose -f docker-compose.yml -f scenarios/missing-service-name/compose.override.yml config --format json | jq -r '.services.app.environment.OTEL_SERVICE_NAME')" = ""
+          test "$(docker compose -f docker-compose.yml -f scenarios/broken-context-propagation/compose.override.yml config --format json | jq -r '.services.app.environment.DEMO_SCENARIO')" = "broken-context-propagation"
+          test "$(docker compose -f docker-compose.yml -f instrumentation/auto-instrumentation/compose.override.yml config --format json | jq -r '.services.app.command[2]')" = "./instrumentation/auto-instrumentation/register.js"
+      - name: Validate local Alloy pipeline
+        run: >-
+          docker run --rm
+          -e OTLP_BACKEND_ENDPOINT=http://lgtm:4318
+          -v "${{ github.workspace }}/alloy:/etc/alloy:ro"
+          grafana/alloy:v1.19.2
+          validate --stability.level=experimental /etc/alloy/config.alloy
+      - name: Validate cloud Alloy pipeline
+        run: >-
+          docker run --rm
+          -e GRAFANA_CLOUD_OTLP_ENDPOINT=https://example.invalid/otlp
+          -e GRAFANA_CLOUD_INSTANCE_ID=ci-placeholder
+          -v "${{ github.workspace }}/alloy:/etc/alloy:ro"
+          -v "${{ github.workspace }}/secrets/README.md:/run/secrets/grafana_cloud_api_key:ro"
+          grafana/alloy:v1.19.2
+          validate /etc/alloy/config.cloud.alloy

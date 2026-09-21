@@ -1,0 +1,71 @@
+name: otel-onboarding-case-study-cloud
+
+services:
+  app:
+    build:
+      context: .
+    command: ["node", "--require", "./instrumentation/sdk/register.js", "./app/server.js"]
+    environment:
+      PORT: "8080"
+      OTEL_SERVICE_NAME: "${OTEL_SERVICE_NAME:-checkout-api}"
+      OTEL_RESOURCE_ATTRIBUTES: "${OTEL_RESOURCE_ATTRIBUTES:-service.namespace=otel-onboarding,deployment.environment.name=demo,service.version=1.0.0,grafana.host.id=otel-onboarding-demo-host}"
+      OTEL_NODE_RESOURCE_DETECTORS: "env,host,os,serviceinstance"
+      OTEL_TRACES_EXPORTER: "otlp"
+      OTEL_METRICS_EXPORTER: "otlp"
+      OTEL_LOGS_EXPORTER: "otlp"
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://alloy:4318"
+      OTEL_EXPORTER_OTLP_PROTOCOL: "http/protobuf"
+      OTEL_LOG_LEVEL: "info"
+      OTEL_METRIC_EXPORT_INTERVAL: "5000"
+      DEMO_SCENARIO: "normal"
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      alloy:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8080/health').then(r => { if (!r.ok) process.exit(1) }).catch(() => process.exit(1))"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
+    restart: unless-stopped
+
+  loadgen:
+    build:
+      context: .
+    command: ["node", "./app/loadgen.js"]
+    environment:
+      BASE_URL: "http://app:8080"
+      LOADGEN_REQUESTS: "${LOADGEN_REQUESTS:-20}"
+      LOADGEN_INTERVAL_MS: "${LOADGEN_INTERVAL_MS:-1500}"
+    depends_on:
+      app:
+        condition: service_healthy
+    restart: "no"
+
+  alloy:
+    image: grafana/alloy:v1.19.2
+    command:
+      - run
+      - --server.http.listen-addr=0.0.0.0:12345
+      - --storage.path=/var/lib/alloy/data
+      - /etc/alloy/config.alloy
+    environment:
+      GRAFANA_CLOUD_OTLP_ENDPOINT: "${GRAFANA_CLOUD_OTLP_ENDPOINT:?Set GRAFANA_CLOUD_OTLP_ENDPOINT in .env.cloud}"
+      GRAFANA_CLOUD_INSTANCE_ID: "${GRAFANA_CLOUD_INSTANCE_ID:?Set GRAFANA_CLOUD_INSTANCE_ID in .env.cloud}"
+    secrets:
+      - grafana_cloud_api_key
+    volumes:
+      - ./alloy/config.cloud.alloy:/etc/alloy/config.alloy:ro
+      - alloy-cloud-data:/var/lib/alloy/data
+    ports:
+      - "127.0.0.1:12345:12345"
+    restart: unless-stopped
+
+volumes:
+  alloy-cloud-data:
+
+secrets:
+  grafana_cloud_api_key:
+    file: "${GRAFANA_CLOUD_API_KEY_FILE:?Set GRAFANA_CLOUD_API_KEY_FILE in .env.cloud}"

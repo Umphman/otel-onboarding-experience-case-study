@@ -1,0 +1,9 @@
+.git
+.github
+node_modules
+coverage
+docs
+scenarios
+*.md
+.env*
+secrets

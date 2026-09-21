@@ -1,0 +1,51 @@
+// Grafana Cloud route. The endpoint and instance ID come from .env.cloud;
+// the temporary access-policy token is mounted as a Compose secret.
+
+otelcol.receiver.otlp "app" {
+  http {
+    endpoint = "0.0.0.0:4318"
+  }
+
+  output {
+    metrics = [otelcol.processor.memory_limiter.telemetry.input]
+    logs    = [otelcol.processor.memory_limiter.telemetry.input]
+    traces  = [otelcol.processor.memory_limiter.telemetry.input]
+  }
+}
+
+otelcol.processor.memory_limiter "telemetry" {
+  check_interval = "1s"
+  limit          = "256MiB"
+  spike_limit    = "64MiB"
+
+  output {
+    metrics = [otelcol.processor.batch.telemetry.input]
+    logs    = [otelcol.processor.batch.telemetry.input]
+    traces  = [otelcol.processor.batch.telemetry.input]
+  }
+}
+
+otelcol.processor.batch "telemetry" {
+  timeout         = "2s"
+  send_batch_size = 512
+
+  output {
+    metrics = [otelcol.exporter.otlphttp.grafana_cloud.input]
+    logs    = [otelcol.exporter.otlphttp.grafana_cloud.input]
+    traces  = [otelcol.exporter.otlphttp.grafana_cloud.input]
+  }
+}
+
+otelcol.auth.basic "grafana_cloud" {
+  client_auth {
+    username      = sys.env("GRAFANA_CLOUD_INSTANCE_ID")
+    password_file = "/run/secrets/grafana_cloud_api_key"
+  }
+}
+
+otelcol.exporter.otlphttp "grafana_cloud" {
+  client {
+    endpoint = sys.env("GRAFANA_CLOUD_OTLP_ENDPOINT")
+    auth     = otelcol.auth.basic.grafana_cloud.handler
+  }
+}

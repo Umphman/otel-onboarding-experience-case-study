@@ -1,0 +1,33 @@
+{
+  "name": "otel-onboarding-experience-case-study",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Synthetic checkout service for evaluating OpenTelemetry onboarding paths.",
+  "license": "MIT",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "start": "npm run start:sdk",
+    "start:sdk": "node --require ./instrumentation/sdk/register.js ./app/server.js",
+    "start:auto": "node --require ./instrumentation/auto-instrumentation/register.js ./app/server.js",
+    "loadgen": "node ./app/loadgen.js",
+    "test": "node --test",
+    "verify:cloud-config": "node ./scripts/validate-cloud-env.js",
+    "verify:pipeline": "node ./scripts/verify-pipeline.js",
+    "verify:signals": "node ./scripts/verify-signals.js"
+  },
+  "dependencies": {
+    "@opentelemetry/api": "1.9.1",
+    "@opentelemetry/api-logs": "0.222.0",
+    "@opentelemetry/auto-instrumentations-node": "0.80.0",
+    "@opentelemetry/exporter-logs-otlp-proto": "0.222.0",
+    "@opentelemetry/exporter-metrics-otlp-proto": "0.222.0",
+    "@opentelemetry/exporter-trace-otlp-proto": "0.222.0",
+    "@opentelemetry/instrumentation-http": "0.222.0",
+    "@opentelemetry/resources": "2.11.0",
+    "@opentelemetry/sdk-logs": "0.222.0",
+    "@opentelemetry/sdk-metrics": "2.11.0",
+    "@opentelemetry/sdk-node": "0.222.0"
+  }
+}

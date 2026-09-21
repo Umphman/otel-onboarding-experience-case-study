@@ -1,0 +1,4 @@
+services:
+  app:
+    environment:
+      DEMO_SCENARIO: "broken-context-propagation"

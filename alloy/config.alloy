@@ -1,0 +1,51 @@
+// Local, credential-free route: application -> Alloy -> Grafana's LGTM image.
+// The experimental debug exporter makes post-processor records visible in
+// `docker compose logs alloy`. The Compose and CI commands therefore set
+// `--stability.level=experimental` explicitly.
+
+otelcol.receiver.otlp "app" {
+  http {
+    endpoint = "0.0.0.0:4318"
+  }
+
+  output {
+    metrics = [otelcol.processor.memory_limiter.telemetry.input]
+    logs    = [otelcol.processor.memory_limiter.telemetry.input]
+    traces  = [otelcol.processor.memory_limiter.telemetry.input]
+  }
+}
+
+otelcol.processor.memory_limiter "telemetry" {
+  check_interval = "1s"
+  limit          = "256MiB"
+  spike_limit    = "64MiB"
+
+  output {
+    metrics = [otelcol.processor.batch.telemetry.input]
+    logs    = [otelcol.processor.batch.telemetry.input]
+    traces  = [otelcol.processor.batch.telemetry.input]
+  }
+}
+
+otelcol.processor.batch "telemetry" {
+  timeout         = "2s"
+  send_batch_size = 512
+
+  output {
+    metrics = [otelcol.exporter.otlphttp.lgtm.input, otelcol.exporter.debug.receipt.input]
+    logs    = [otelcol.exporter.otlphttp.lgtm.input, otelcol.exporter.debug.receipt.input]
+    traces  = [otelcol.exporter.otlphttp.lgtm.input, otelcol.exporter.debug.receipt.input]
+  }
+}
+
+otelcol.exporter.otlphttp "lgtm" {
+  client {
+    endpoint = sys.env("OTLP_BACKEND_ENDPOINT")
+  }
+}
+
+otelcol.exporter.debug "receipt" {
+  verbosity           = "detailed"
+  sampling_initial    = 5
+  sampling_thereafter = 200
+}
