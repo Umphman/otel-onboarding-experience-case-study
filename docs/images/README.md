@@ -12,9 +12,9 @@ Every filename below remains a plan until the exact result is produced and
 saved from one of the clean runs in the [demo runbook](../../DEMO.md).
 
 The executable implementation used for the completed local verification is
-`5cbd086da453659104b9f58eb007ba6557d1356d`. The initial evidence and
+`b3c43bfce3ff6f40119c8c37d3d9a29104b24a50`. The initial evidence and
 documentation record was introduced at
-`4fcea6b8dc675975b2f4374d8aec1f9127f7262e`, a documentation-only descendant
+`23cb2732900109b807c1261da4a3c61bc4e93926`, a documentation-only descendant
 of that executable tree. Future screenshots must record the actual checked-out
 SHA used for their capture; neither milestone SHA implies that an image already
 exists.

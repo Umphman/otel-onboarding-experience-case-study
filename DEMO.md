@@ -10,12 +10,12 @@ The Node/mock-receiver checks, two volume-clean Docker runs, and all three local
 failure-and-recovery scenarios are observed in the [runtime verification
 record](docs/evidence/runtime-verification.md). Both local publication runs
 executed the implementation at
-`5cbd086da453659104b9f58eb007ba6557d1356d`; the initial evidence and
+`b3c43bfce3ff6f40119c8c37d3d9a29104b24a50`; the initial evidence and
 documentation record was introduced at
-`4fcea6b8dc675975b2f4374d8aec1f9127f7262e`, a documentation-only descendant
+`23cb2732900109b807c1261da4a3c61bc4e93926`, a documentation-only descendant
 of that executable tree. The runs include Alloy counter deltas plus Tempo,
 Loki, and Prometheus queries. A separate bounded Grafana Cloud checkpoint was
-observed on 2026-09-22 from base `35f3014` plus the documented Alloy v1.19.2
+observed on 2026-09-22 from base `a1063c2` plus the documented Alloy v1.19.2
 compatibility delta. The public-safe screenshot/video set remains pending.
 
 Use these labels consistently:
@@ -436,6 +436,6 @@ public-safety requirements. Do not publish a placeholder as evidence.
 - [x] Scan the current working tree for credential-shaped values.
 - [ ] Have the author review first-person decisions and authorship in their own
   voice.
-- [ ] Create the public GitHub repository from a clean history.
+- [x] Create the public GitHub repository from a clean history.
 - [x] Scan the current local commit history for secrets and private material.
-- [ ] Tag the evidence-bearing release, for example `v1.0.0-case-study`.
+- [x] Tag the evidence-bearing release as `v1.0.0-case-study`.

@@ -199,7 +199,7 @@ Failure scenarios change one variable at a time and preserve the healthy default
 | Invalid Grafana Cloud credentials | Deliberately invalid token on the Alloy-to-Cloud route | Workload and application-to-Alloy receipt remain healthy | Collector authentication or authorization check |
 
 The first three scenarios are local and executable. Each was run independently
-at commit `5cbd086`; the intended failed boundary and a fresh successful
+at commit `b3c43bf`; the intended failed boundary and a fresh successful
 recovery probe were observed. The credential scenario was exercised once on
 2026-09-22 against a stack-scoped destination: the invalid phase isolated an
 authenticated export rejection and the fresh valid phase established hosted
@@ -212,7 +212,7 @@ demo data cannot masquerade as recovery evidence.
 
 ## Reliability and data-quality invariants
 
-The setup run and two volume-clean executions of commit `5cbd086` provide
+The setup run and two volume-clean executions of commit `b3c43bf` provide
 machine evidence for the local acceptance requirements below, with the exact
 observed boundaries recorded in the [runtime verification
 record](evidence/runtime-verification.md). The three executable local failure
@@ -250,12 +250,13 @@ The reference implementation is not a security hardening guide. It demonstrates 
 
 The primary demonstration uses the local LGTM stack so a reviewer can reproduce
 the full signal and query journey without an account or token. The recorded
-setup run plus two volume-clean runs of commit `5cbd086` demonstrate local
+setup run plus two volume-clean runs of commit `b3c43bf` demonstrate local
 receipt, identity, and correlation through the real
 Alloy-to-Tempo/Loki/Prometheus path. All three executable local failure and
 recovery scenarios were also observed. The local machine-verification gate is
-complete; curated screenshots, the walkthrough video, a public GitHub remote,
-and CI evidence on the public commit remain pending.
+complete. This repository is the canonical public artifact, and its CI workflow
+passes on the release commit. Curated screenshots and the walkthrough video
+remain pending.
 
 The optional Grafana Cloud Compose variant uses the same application-to-Alloy
 path and replaces the backend exporter. One controlled 2026-09-22 execution
@@ -288,7 +289,7 @@ Kubernetes, browser, mobile, and multi-service variants are deliberately deferre
 - [x] The bounded verifier returns nonzero for each local fault; the supporting
   application, Alloy, and backend evidence localizes the failed gate.
 - [ ] The curated visual demo names the highest useful-observability level it has actually proven.
-- [ ] The public GitHub commit exists and its CI workflow passes.
+- [x] The public GitHub commit exists and its CI workflow passes.
 
 ## References
 

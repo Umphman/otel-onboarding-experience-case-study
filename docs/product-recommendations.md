@@ -9,15 +9,16 @@ These recommendations are hypotheses based on the synthetic reference implementa
 The default reference path exercises the journey against a credential-free
 local LGTM stack. The [runtime verification
 record](evidence/runtime-verification.md) records two volume-clean Docker runs
-of commit `5cbd086`, real Alloy-to-Tempo/Loki/Prometheus proof, and observed
+of commit `b3c43bf`, real Alloy-to-Tempo/Loki/Prometheus proof, and observed
 failure plus fresh recovery for all three executable local scenarios. This
 completes the local machine-verification gate. A separate bounded Cloud run
 observed authentication rejection and fresh three-signal receipt in Grafana
-Explore. Public-safe screenshots, curated Application Observability activation,
-the walkthrough video, a public GitHub remote, and CI on the public commit
-remain pending. The Cloud authentication recommendations are now supported by
-one synthetic execution, while the broader product recommendations remain
-hypotheses requiring customer research and product data.
+Explore. The canonical GitHub repository is public and CI passes on its release
+commit. Public-safe screenshots, curated Application Observability activation,
+and the walkthrough video remain pending. The Cloud authentication
+recommendations are now supported by one synthetic execution, while the broader
+product recommendations remain hypotheses requiring customer research and
+product data.
 
 ## Desired outcome
 

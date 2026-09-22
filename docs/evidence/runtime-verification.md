@@ -11,13 +11,13 @@ walkthrough video are still required for their corresponding visual claims.
 ## Provenance milestones
 
 - **Executable implementation verified:**
-  `5cbd086da453659104b9f58eb007ba6557d1356d`.
+  `b3c43bfce3ff6f40119c8c37d3d9a29104b24a50`.
 - **Initial local evidence and documentation record introduced:**
-  `4fcea6b8dc675975b2f4374d8aec1f9127f7262e`. This is a docs-only
+  `23cb2732900109b807c1261da4a3c61bc4e93926`. This is a docs-only
   descendant of the verified implementation commit, not the runtime source for
   the local runs.
 - **Grafana Cloud execution:** 2026-09-22 from checked-out base
-  `35f3014a7a40f9468fe446e77dca39c8ce4c2001` plus one pre-run working-tree
+  `a1063c28b899f7024511f4a11a2c4943c79ad257` plus one pre-run working-tree
   delta: the Alloy v1.19.2 dual-mode basic-auth compatibility workaround in
   `alloy/config.cloud.alloy`. No later evidence or release commit is presented
   as the execution source.
@@ -168,7 +168,7 @@ journey, as intended:
 ## Publication volume-clean runs
 
 Both publication runs used source commit
-`5cbd086da453659104b9f58eb007ba6557d1356d`. Each began with
+`b3c43bfce3ff6f40119c8c37d3d9a29104b24a50`. Each began with
 `docker compose down -v --remove-orphans`, rebuilt without cache, started the
 same `docker-compose.yml`, and used a new synthetic probe. The second run did
 not reuse the first run's containers or volumes.
@@ -181,7 +181,7 @@ not reuse the first run's containers or volumes.
 | Host | Windows 10, build 19045; WSL 2.7.14.0 | Windows 10, build 19045; WSL 2.7.14.0 |
 | Docker | Desktop 4.92.0.240144; client/server Engine 29.8.0; Compose 5.5.1 | Desktop 4.92.0.240144; client/server Engine 29.8.0; Compose 5.5.1 |
 | Node.js | Application image 24.21.0; workstation 22.18.0 | Application image 24.21.0; workstation 22.18.0 |
-| Source commit | `5cbd086da453659104b9f58eb007ba6557d1356d` | `5cbd086da453659104b9f58eb007ba6557d1356d` |
+| Source commit | `b3c43bfce3ff6f40119c8c37d3d9a29104b24a50` | `b3c43bfce3ff6f40119c8c37d3d9a29104b24a50` |
 | Compose project / path | `otel-onboarding-case-study`; explicit SDK, `normal` | `otel-onboarding-case-study`; explicit SDK, `normal` |
 | Application image | `sha256:f2d9c798e773a015cecbc5d2dfedb504a568ec7adedc238714b743e308619087` | `sha256:aee1edcccc82509c9a6a769e46e88d8cea0ca4bb4824c2e14ceebba4606a41e0` |
 | Alloy image | `grafana/alloy:v1.19.2`, digest `sha256:b8ec653c44235fbe910879145dac3597d66b0aaecf60bcbbe82580767771a839` | Same pinned image and digest |
@@ -195,7 +195,7 @@ The initial clean attempt exposed a startup-readiness problem rather than an
 application or telemetry failure. LGTM's native health check used a 30-second
 interval, three retries, and no start grace, so Compose marked it unhealthy
 before first-start Grafana became ready at approximately 169 seconds. Commit
-`5cbd086da453659104b9f58eb007ba6557d1356d` retained the same health script but
+`b3c43bfce3ff6f40119c8c37d3d9a29104b24a50` retained the same health script but
 configured a 10-second interval, 5-second timeout, 12 retries, and a 240-second
 `start_period`. Both complete volume-clean runs above then passed.
 
@@ -256,7 +256,7 @@ excluded.
 
 The run used Docker Engine 29.8.0, Compose 5.5.1, the pinned
 `grafana/alloy:v1.19.2` image, and the Node.js 24.21.0 application image. The
-checked-out base was `35f3014a7a40f9468fe446e77dca39c8ce4c2001` with exactly
+checked-out base was `a1063c28b899f7024511f4a11a2c4943c79ad257` with exactly
 one tracked pre-run delta: inert top-level basic-auth placeholders required by
 the Alloy v1.19.2 lifecycle behavior documented in `grafana/alloy#5793`. The
 real instance ID and file-mounted token remained exclusively in `client_auth`.
@@ -308,7 +308,6 @@ production-readiness or adoption result. This repository does not claim that:
 - the walkthrough video was recorded; or
 - the synthetic result generalizes to production scale, cost, or reliability.
 
-The CI workflow is configured to build the container, resolve every Compose
-override, validate both Alloy configurations, and run the Node checks. Those CI
-steps become evidence only after the workflow actually runs successfully on the
-recorded public commit.
+The CI workflow builds the container, resolves every Compose override, validates
+both Alloy configurations, and runs the Node checks. It passed on the canonical
+public release commit.
