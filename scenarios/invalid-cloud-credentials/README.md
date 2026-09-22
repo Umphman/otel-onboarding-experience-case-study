@@ -1,7 +1,8 @@
 # Scenario: invalid Grafana Cloud credentials
 
-> **Execution status:** documented, not yet executed. No runtime evidence or
-> screenshot in this repository currently proves this scenario.
+> **Execution status:** observed once on 2026-09-22 with synthetic traffic and
+> fresh valid-phase recovery. The sanitized textual record is committed; a
+> public-safe Cloud UI capture is still pending.
 
 ## Purpose and boundary
 
@@ -18,6 +19,13 @@ The Cloud Alloy configuration intentionally has no `debug` exporter. The
 controlled Cloud run sends only to the `grafana_cloud` exporter, so container
 logs cannot accidentally become a second copy of telemetry payloads. Local
 debug-exporter evidence belongs only to the separate local verification path.
+
+The pinned Alloy v1.19.2 image also requires a narrow compatibility workaround
+for [`grafana/alloy#5793`](https://github.com/grafana/alloy/issues/5793): a
+dual-mode auth component instantiates an unused server authenticator. The
+top-level username/password in `config.cloud.alloy` are deliberately invalid
+placeholders for that unused path; the real instance ID and file-mounted token
+remain only in `client_auth`. A regression test protects that separation.
 
 ## Safety prerequisites
 
@@ -122,7 +130,7 @@ The Alloy UI at <http://localhost:12345> can provide component-level context,
 but a green component graph proves that configuration loaded—not that Cloud
 accepted a batch.
 
-## Expected evidence
+## Acceptance evidence
 
 The exact error text can vary with the Grafana Cloud gateway and Alloy version.
 The required invariant is an authentication rejection at the authenticated
@@ -150,6 +158,26 @@ refusal, TLS failure, timeout, or `404`; those indicate endpoint or network
 configuration rather than authentication. It is also not valid if Grafana Cloud
 accepts the deliberately invalid string. In that case, stop the exercise and
 investigate the endpoint and credential source before continuing.
+
+## Observed execution
+
+The 2026-09-22 run used exactly one 20-request workload in each phase. Both
+phases produced 18 HTTP `201` responses and two intentional validation `400`
+responses; all successful checkouts reported healthy context propagation.
+
+During the invalid phase, Alloy accepted the workload's telemetry while the
+Cloud exporter reported HTTP `401` / `Unauthenticated` for traces, metrics, and
+logs. Accepted and failed-send deltas matched at `+104` spans, `+126` metric
+points, and `+56` log records, while outbound sent counters remained zero. A
+separate negative hosted query for that invalid-phase probe was not retained.
+
+After replacing only the ignored secret and recreating the bounded stack, the
+valid phase produced matching accepted/sent deltas of `+104` spans, `+114`
+metric points, and `+56` log records. Grafana Explore returned the selected
+connected checkout trace, 21 matching checkout metric series, and the three
+expected lifecycle logs. The [runtime verification
+record](../../docs/evidence/runtime-verification.md#controlled-grafana-cloud-checkpoint)
+contains the sanitized provenance, query, cleanup, and limitation details.
 
 ## Diagnosis
 
@@ -267,5 +295,9 @@ reachability and configuration parsing. A human UI or agent response should:
   healthy; and
 - require a fresh synthetic signal to verify recovery.
 
-This scenario remains a hypothesis until the documented run is executed and
-sanitized evidence is captured from a disposable Grafana Cloud stack.
+This procedure was executed once with synthetic traffic. The invalid phase
+preserved application health and Alloy receipt while the Cloud exporter
+reported `Unauthenticated` and sent no records. A fresh valid phase produced
+hosted metrics, traces, and correlated lifecycle logs. The strict negative
+backend query for the invalid phase was not retained, no public-safe screenshot
+is committed, and no curated Application Observability activation is claimed.

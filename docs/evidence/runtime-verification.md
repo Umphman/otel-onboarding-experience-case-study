@@ -1,12 +1,12 @@
 # Runtime verification record
 
-Date: 2026-09-21<br>
+Last updated: 2026-09-22<br>
 Application runtime: Node.js 24.21.0 in the pinned container image
 
 This record separates the initial workstation setup evidence from the two
-committed, volume-clean publication runs recorded below. The optional Grafana
-Cloud check, dated screenshot gallery, and walkthrough video are still
-required for their corresponding publication claims.
+committed, volume-clean publication runs and the later controlled Grafana Cloud
+checkpoint recorded below. A public-safe dated screenshot gallery and
+walkthrough video are still required for their corresponding visual claims.
 
 ## Provenance milestones
 
@@ -16,10 +16,11 @@ required for their corresponding publication claims.
   `4fcea6b8dc675975b2f4374d8aec1f9127f7262e`. This is a docs-only
   descendant of the verified implementation commit, not the runtime source for
   the local runs.
-- **Grafana Cloud execution:** pending. Its evidence record must preserve the
-  actual checked-out SHA used for the run. Any later commit that adds captures,
-  updates this record, or becomes the release commit must be recorded
-  separately rather than presented as the execution source.
+- **Grafana Cloud execution:** 2026-09-22 from checked-out base
+  `35f3014a7a40f9468fe446e77dca39c8ce4c2001` plus one pre-run working-tree
+  delta: the Alloy v1.19.2 dual-mode basic-auth compatibility workaround in
+  `alloy/config.cloud.alloy`. No later evidence or release commit is presented
+  as the execution source.
 
 ## Status taxonomy
 
@@ -27,7 +28,7 @@ required for their corresponding publication claims.
 | --- | --- | --- |
 | Node processes and mock OTLP/HTTP receiver | **Observed locally** | The real instrumentation preloads sent non-empty protobuf requests to each expected signal endpoint; response trace IDs and structured stdout supplied the correlation evidence recorded below |
 | Docker, Alloy, and local Grafana/LGTM | **Observed locally — two volume-clean runs** | The committed pipeline reproduced from removed volumes and no-cache builds; three isolated local failures were diagnosed and followed by fresh successful recovery probes. UI captures remain pending |
-| Grafana Cloud | **Pending — unobserved** | Hosted authentication, export, receipt, attribution, correlation, and downstream product views have not been executed |
+| Grafana Cloud | **Observed — controlled checkpoint** | An invalid-token phase isolated authenticated export failure; a fresh valid-token phase produced hosted trace, log, and metric results in Grafana Explore. A curated Application Observability view and public-safe image set remain unverified |
 
 `Observed` is reserved for evidence produced by an actual recorded run.
 Configuration-derived behavior remains `Expected` until that evidence exists.
@@ -246,22 +247,44 @@ this case study.
 
 ## Controlled Grafana Cloud checkpoint
 
-**Status: pending — unobserved.** No row below is evidence of a completed Cloud
-run. The Cloud configuration intentionally omits the debug exporter; debug
-activity recorded in the local runs is local-only evidence and is not exported
-to Grafana Cloud.
+**Status: observed on 2026-09-22.** This was one bounded, synthetic
+invalid-then-valid execution against a stack-scoped destination. The Cloud
+configuration intentionally omitted the debug exporter, so the record combines
+sanitized Alloy counters/errors with independent Grafana Explore queries. Raw
+tenant, endpoint, instance, policy, and user identifiers are intentionally
+excluded.
 
-| Checkpoint | Status | Required record |
+The run used Docker Engine 29.8.0, Compose 5.5.1, the pinned
+`grafana/alloy:v1.19.2` image, and the Node.js 24.21.0 application image. The
+checked-out base was `35f3014a7a40f9468fe446e77dca39c8ce4c2001` with exactly
+one tracked pre-run delta: inert top-level basic-auth placeholders required by
+the Alloy v1.19.2 lifecycle behavior documented in `grafana/alloy#5793`. The
+real instance ID and file-mounted token remained exclusively in `client_auth`.
+
+| Checkpoint | Status | Observed record |
 | --- | --- | --- |
-| Execution provenance | **Pending — unobserved** | Actual checked-out SHA used for the Cloud run, followed separately by any later capture or release commit |
-| Invalid-auth boundary | **Pending — unobserved** | Bounded synthetic probe, sanitized authentication failure, local receiver evidence, and confirmation that the probe did not appear in the intended Cloud stack |
-| Valid authenticated run | **Pending — unobserved** | Fresh bounded synthetic probe after replacing the invalid credential, with sanitized successful export or ingestion evidence |
-| Hosted signal receipt | **Pending — unobserved** | Independent Cloud evidence for traces, metrics, and logs from the valid probe |
-| Identity and correlation | **Pending — unobserved** | Intended service resource attributes plus checkout/inventory trace continuity and logs correlated to the same trace |
-| Downstream view | **Pending — unobserved** | The named Grafana Cloud product surface or query view used to answer the operating question |
-| Stack shutdown | **Pending — unobserved** | UTC time when the bounded Cloud Compose stack was stopped and its volumes removed |
-| Token revocation | **Pending — unobserved** | UTC revocation time for the temporary least-privilege token; never record the token value |
-| Local secret removal and history scan | **Pending — unobserved** | Confirmation that the ignored environment and secret files were deleted and that tracked files and Git history contain no credential material |
+| Invalid-auth boundary | **Observed locally during the Cloud run** | Window `2026-09-22T11:56:23Z`–`11:57:23Z`; exactly 20 requests produced 18 HTTP `201` responses and 2 expected validation `400` responses. App and Alloy health stayed `200`. Receiver-accepted and exporter-failed deltas matched at logs `+56`, metric points `+126`, and spans `+104`; sent counters stayed `0`. Sanitized exporter evidence reported HTTP `401` with `Unauthenticated` for all three signal paths. A separate public-safe hosted no-data capture was not retained. |
+| Valid authenticated run | **Observed** | After replacing only the ignored secret and recreating a fresh Cloud stack state, window `2026-09-22T12:03:58Z`–`12:04:58Z` again produced 18 HTTP `201` responses and 2 expected validation `400` responses. All 18 successful responses reported healthy checkout-to-inventory context propagation. |
+| Export success | **Observed** | Receiver-accepted and exporter-sent deltas matched at logs `+56`, metric points `+114`, and spans `+104`. No failed-send series appeared in the valid counter snapshot, and the sanitized valid-window error scan was empty. |
+| Hosted metrics | **Observed in Grafana Explore** | A six-hour query spanning the run used `{__name__=~"demo_checkout_.*"}` and returned 21 normalized checkout counter and histogram series. This proves hosted receipt of the demo metric families, not exact per-probe metric attribution. |
+| Hosted trace | **Observed in Grafana Explore** | Direct lookup returned trace `5ed9efebfe5b18c13be6d736dbdc703c` for `checkout-api` at `2026-09-22T12:03:59Z`; interactive detail review confirmed `checkout.process` and `inventory.reserve` in the same trace. |
+| Hosted logs | **Observed in Grafana Explore** | A structured-metadata query for synthetic checkout `load_3406307b` returned exactly `checkout started`, `inventory reserved`, and `checkout completed` at `2026-09-22T12:03:59Z`; interactive review confirmed the selected trace ID. |
+| Identity and correlation | **Observed, with qualification** | The hosted trace resolved as `checkout-api`, the hosted log result visibly carried the `demo` environment, and the operator confirmed the expected checkout/inventory operations and shared trace context. Namespace `otel-onboarding` and version `1.0.0` were configuration-derived and were not independently checked in the retained hosted results. |
+| Downstream view | **Partially observed** | Grafana Explore independently proved Tempo, Loki, and Prometheus receipt. No curated Application Observability/service-overview activation is claimed. |
+| Stack and local-secret cleanup | **Observed** | The project-owned Cloud containers, network, and `alloy-cloud-data` volume were removed. `.env.cloud` and `secrets/grafana-cloud-api-key.txt` were deleted; ignore rules still matched both paths; `git log --all --` returned no history for either. |
+| Temporary credential revocation | **User-confirmed** | The user confirmed revocation of the dedicated temporary access policy/token after verification. The exact revocation timestamp was not retained. |
+
+The private interactive captures exposed an account-derived data-source name,
+so they are not committed as public evidence. The table above is the sanitized
+execution record; a deterministic crop or opaque-redaction pass is still
+required before any Cloud UI image is published.
+
+Post-run regression checks used Node.js 24.19.0 on the host: all 21 tests
+passed, including the focused Cloud basic-auth separation test, and
+`verify:signals` passed for both healthy instrumentation modes plus the expected
+broken-context case. The Cloud Compose model resolved with reserved-example
+placeholders, and the pinned Alloy v1.19.2 image validated
+`config.cloud.alloy` successfully.
 
 ## Screenshot and video status
 
@@ -269,7 +292,7 @@ to Grafana Cloud.
   and recovery: **pending — unobserved**. Group 01 uses one supporting topology
   image and three signal-specific source captures.
 - Approximately three-minute walkthrough: **pending — unrecorded**.
-- Grafana Cloud capture: **pending — unobserved and optional**.
+- Grafana Cloud execution: **observed**; public-safe Cloud image set: **pending**.
 
 The capture schema and safety review are in the [image evidence
 guide](../images/). The timed narrative is in the [demo
@@ -277,12 +300,13 @@ runbook](../../DEMO.md#approximately-three-minute-video-outline).
 
 ## Claims still prohibited
 
-The local clean runs and isolated failure recoveries above do not establish any
-hosted or visual evidence. This repository does not claim that:
+The local and hosted runs above establish bounded machine/query evidence, not a
+production-readiness or adoption result. This repository does not claim that:
 
-- Grafana Cloud authentication or hosted receipt succeeded;
 - a curated Grafana Cloud Application Observability surface was activated;
-- screenshots or video were captured from the implementation.
+- the private interactive captures are publication-safe screenshots;
+- the walkthrough video was recorded; or
+- the synthetic result generalizes to production scale, cost, or reliability.
 
 The CI workflow is configured to build the container, resolve every Compose
 override, validate both Alloy configurations, and run the Node checks. Those CI

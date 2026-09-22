@@ -145,16 +145,20 @@ The product should recommend one path, explain why, and preserve the other paths
 
 Failures are part of the artifact because a happy-path screenshot does not demonstrate diagnostic quality.
 
-| Scenario | Expected symptom | Root cause to surface | Evidence of a good diagnosis | Recovery check |
+| Scenario | Expected or observed symptom | Root cause to surface | Evidence of a good diagnosis | Recovery check |
 | --- | --- | --- | --- | --- |
 | Bad OTLP endpoint | No new exports reach the intended receiver | Host, port, scheme, or route is wrong | Message names the attempted endpoint, failing hop, and a safe next test without exposing credentials | Preflight succeeds and the known probe reaches Level 2 for all required signals |
 | Missing service name | Data arrives under a default or unknown identity | Required resource attribute is absent or overridden | Message shows expected versus observed identity and the winning configuration source | Probe appears under the intended synthetic service at Level 3 |
 | Broken context propagation | Trace and log exist but cannot be joined, or a downstream span starts a new trace | Context is not propagated across an async or outbound boundary | Message identifies the broken boundary and shows trace-ID mismatch without dumping payloads | One probe produces the expected connected trace and correlated log at Level 4 |
-| Invalid Cloud credentials | Expected: the local workload remains healthy while hosted export returns an authentication or authorization rejection, commonly 401/403 | Token, instance ID, or write scope is invalid | Message names the authenticated Cloud-export boundary and keeps credential values redacted | A fresh probe reaches the intended stack after restoring a correctly scoped token |
+| Invalid Cloud credentials | Observed once: the local workload remained healthy while hosted export returned HTTP `401` / `Unauthenticated` | Token, instance ID, or write scope is invalid | Message names the authenticated Cloud-export boundary and keeps credential values redacted | A fresh probe reached the intended stack after restoring a correctly scoped token |
 
 The first three scenarios were executed independently at commit `5cbd086`; the
-intended failure and a fresh successful recovery were observed for each. The
-invalid-Cloud-credentials scenario remains an unexecuted, expected outcome.
+intended failure and a fresh successful recovery were observed for each. A
+separate controlled Cloud run from base `35f3014` plus the documented Alloy
+compatibility delta observed an `Unauthenticated` rejection at the outbound
+Alloy boundary and fresh hosted receipt after a correctly scoped token was
+installed. The invalid-phase negative backend query and curated Application
+Observability activation were not retained or claimed.
 Each scenario should be reversible, isolated from the healthy default, and
 documented with the command or configuration switch that activates it. Failure
 output is part of the user experience and should be captured alongside the fix.
@@ -216,9 +220,10 @@ The repository author owns the product decisions, must be able to explain every
 decision, and must review every command and captured result. Two volume-clean
 Docker runs of commit `5cbd086` and all three local failure/recovery scenarios
 complete the local machine-verification gate, including real
-Alloy-to-Tempo/Loki/Prometheus evidence. Grafana Cloud execution, curated
-screenshots, the walkthrough video, a public GitHub remote, and CI on the public
-commit remain pending; no UI-proof or production-readiness claim is made.
+Alloy-to-Tempo/Loki/Prometheus evidence. One bounded Cloud checkpoint also
+established authentication failure and fresh hosted receipt in Grafana Explore.
+Public-safe curated screenshots, the walkthrough video, a public GitHub remote,
+CI on the public commit, and production-readiness evidence remain pending.
 
 ## References
 

@@ -144,9 +144,13 @@ claim.
 
 ## Planned Grafana Cloud evidence
 
-Grafana Cloud has not been executed for this evidence record. Every file in
-this section is **Pending — unobserved**. Capture it only during the controlled
-invalid-then-valid run in the [demo runbook](../../DEMO.md#optional-grafana-cloud-execution).
+A controlled Grafana Cloud run was observed interactively on 2026-09-22, but no
+public-safe Cloud capture is committed. The working screenshots contain
+account-derived data-source identifiers and must not be published without
+cropping or opaque redaction followed by the full safety review. Every planned
+Cloud image below therefore remains pending even though the sanitized textual
+result is recorded in the [runtime verification
+record](../evidence/runtime-verification.md#controlled-grafana-cloud-checkpoint).
 The Cloud Alloy configuration intentionally omits the debug exporter, so do not
 plan a Cloud debug-output claim.
 
@@ -155,19 +159,23 @@ plan a Cloud debug-output claim.
 | `cloud-01-invalid-auth.png` | Invalid credentials fail at the hosted export boundary while the local app-to-Alloy path remains healthy | Local Alloy before/after counters, exact sanitized status/error, bounded probe identity, and Cloud query showing the new probe is absent |
 | `cloud-02-export-success.png` | Correct credentials restore successful export or ingestion | New valid-phase baseline/delta, no credential error for that window, and a hosted result for the new probe |
 | `cloud-03-service-identity.png` | The hosted service is visible with the declared attribution | Name, namespace, version, `demo` environment, and only public-safe host identity |
-| `cloud-04-hosted-trace.png` | The controlled workload produced a hosted connected trace | Checkout and inventory spans, intended service identity, duration, trace ID, and bounded valid-phase window |
-| `cloud-05-hosted-log.png` | The controlled workload produced a hosted structured log correlated with the trace | Synthetic checkout record, intended service identity, the same trace ID as `cloud-04`, and bounded valid-phase window |
+| `cloud-04-hosted-trace.png` | The controlled workload produced a hosted connected trace | Checkout and inventory spans, intended service identity, duration, trace ID or consistent public alias, and bounded valid-phase window |
+| `cloud-05-hosted-log.png` | The controlled workload produced a hosted structured log correlated with the trace | Synthetic checkout record, intended service identity, the same trace ID or alias as `cloud-04`, and bounded valid-phase window |
 | `cloud-06-hosted-metrics.png` | The controlled workload produced hosted metrics | Request, error, and latency metrics for the bounded valid-phase window and intended service identity |
 | `cloud-07-downstream-view.png` | At least one curated downstream view is genuinely active | The synthetic service/workload in Application Observability or another explicitly named activated surface; raw OTLP receipt alone is insufficient |
 
 Every hosted-surface image must display or carry a caption with `Observed in
-Grafana Cloud on YYYY-MM-DD`, the full checked-out commit SHA, and `Synthetic
-workload and data`. Label the invalid-auth Alloy image `Observed locally during
-the controlled Grafana Cloud run on YYYY-MM-DD` instead, because that error is
-not a hosted-data observation; include the same SHA and synthetic-data label.
-Also record the exact run/probe IDs, UTC timestamp, image versions, and the
-visible-activity/limitation field. Do not expose a token, endpoint, account,
-organization, stack, tenant, or user identifier.
+Grafana Cloud on YYYY-MM-DD`, the full checked-out base SHA plus any documented
+working-tree runtime delta, and `Synthetic workload and data`. A fresh clean
+rerun after committing the runtime delta may cite that clean execution SHA
+instead. Label the invalid-auth Alloy image `Observed locally during the
+controlled Grafana Cloud run on YYYY-MM-DD` because that error is not a
+hosted-data observation; include the same provenance and synthetic-data label.
+Also record the exact synthetic run/probe IDs or one consistent public alias,
+the UTC timestamp, image versions, and the visible-activity/limitation field.
+If an ID is redacted, retain the exact value only in the private capture log and
+use the same alias in trace and log evidence. Do not expose a token, endpoint,
+account, organization, stack, tenant, or user identifier.
 
 ## Approximately three-minute walkthrough
 

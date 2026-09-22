@@ -200,9 +200,10 @@ Failure scenarios change one variable at a time and preserve the healthy default
 
 The first three scenarios are local and executable. Each was run independently
 at commit `5cbd086`; the intended failed boundary and a fresh successful
-recovery probe were observed. The credential scenario is a guided Cloud
-exercise and remains unproven until it is run against a disposable stack with
-sanitized evidence.
+recovery probe were observed. The credential scenario was exercised once on
+2026-09-22 against a stack-scoped destination: the invalid phase isolated an
+authenticated export rejection and the fresh valid phase established hosted
+receipt. Its private UI captures still require public-safe redaction.
 
 Scenarios use documented Compose overrides or environment values and never
 require an in-place edit to the healthy configuration. Return to the default
@@ -215,8 +216,10 @@ The setup run and two volume-clean executions of commit `5cbd086` provide
 machine evidence for the local acceptance requirements below, with the exact
 observed boundaries recorded in the [runtime verification
 record](evidence/runtime-verification.md). The three executable local failure
-scenarios were also isolated and recovered. This does not supply Grafana Cloud
-or visual product evidence:
+scenarios were also isolated and recovered. A separate bounded synthetic run
+supplied Grafana Cloud authentication and hosted Explore evidence. It does not
+supply public-safe visual evidence, curated product activation,
+production-scale validation, or a second hosted reproduction:
 
 - application startup is not indefinitely blocked by an unavailable telemetry backend;
 - export failures are visible and rate-limited rather than silently swallowed or logged in a tight loop;
@@ -255,11 +258,13 @@ complete; curated screenshots, the walkthrough video, a public GitHub remote,
 and CI evidence on the public commit remain pending.
 
 The optional Grafana Cloud Compose variant uses the same application-to-Alloy
-path and replaces the backend exporter. Cloud execution and hosted screenshots
-are still required for claims about Grafana Cloud ingestion, authentication, or
-activation. The credential-free local path still requires curated UI captures
-before publication, but those captures are not prerequisites for the completed
-machine-verification claims above.
+path and replaces the backend exporter. One controlled 2026-09-22 execution
+observed an invalid-credential rejection and fresh valid-credential receipt for
+all three signals in Grafana Explore. Public-safe hosted screenshots and a
+curated Application Observability view remain unverified. The credential-free
+local path still requires curated UI captures before publication, but those
+captures are not prerequisites for the completed machine-verification claims
+above.
 
 Kubernetes, browser, mobile, and multi-service variants are deliberately deferred. The maturity model and agent contract should transfer to them; the implementation details will not.
 
@@ -269,11 +274,15 @@ Kubernetes, browser, mobile, and multi-service variants are deliberately deferre
 - [x] Exactly one instrumentation mode is active.
 - [x] The application has no cloud credential.
 - [x] Alloy receives all implemented signals and exposes diagnostic evidence.
-- [ ] Grafana Cloud export is observed using runtime-injected credentials.
+- [x] Grafana Cloud export was observed using runtime-injected credentials in
+  one bounded synthetic run.
 - [x] The synthetic probe creates the documented trace shape, log event, and metric change.
-- [x] Expected resource identity is consistent across signals.
+- [x] Expected resource identity is consistent across signals in both completed
+  local runs; the Cloud captures independently established only service name
+  and environment.
 - [x] Each of the three executable local failure scenarios changes one intended condition and is reversible.
-- [ ] The invalid-Cloud-credentials scenario is observed and recovered.
+- [x] An invalid credential rejection and fresh valid-phase recovery were
+  observed; the invalid-phase negative backend query was not retained.
 - [x] The committed source scan contains no secret, account identifier, or real user data.
 - [ ] Curated screenshots and the walkthrough video pass the public-safety review.
 - [x] The bounded verifier returns nonzero for each local fault; the supporting

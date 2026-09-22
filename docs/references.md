@@ -1,6 +1,6 @@
 # Technical references
 
-Checked on 2026-09-21. Primary project documentation and release registries are
+Checked on 2026-09-22. Primary project documentation and release registries are
 used so the executable example can be audited independently.
 
 ## Version choices
@@ -37,6 +37,9 @@ for the logs pipeline remain experimental and may make breaking changes.
 - [OTLP/HTTP exporter](https://grafana.com/docs/alloy/latest/reference/components/otelcol/otelcol.exporter.otlphttp/)
 - [Debug exporter and stability requirement](https://grafana.com/docs/alloy/latest/reference/components/otelcol/otelcol.exporter.debug/)
 - [Basic authentication component](https://grafana.com/docs/alloy/latest/reference/components/otelcol/otelcol.auth.basic/)
+- [Alloy issue #5793: auth extensions start unused client/server variants](https://github.com/grafana/alloy/issues/5793)
+- [Alloy v1.19.2 auth-extension lifecycle source](https://github.com/grafana/alloy/blob/v1.19.2/internal/component/otelcol/auth/auth.go#L236-L265)
+- [Alloy v1.19.2 basic-auth client credential-file source](https://github.com/grafana/alloy/blob/v1.19.2/internal/component/otelcol/auth/basic/basic.go#L45-L64)
 - [Send OpenTelemetry data to Grafana Cloud through Alloy](https://grafana.com/docs/opentelemetry/collector/grafana-alloy/)
 - [Grafana Cloud authentication and access policies](https://grafana.com/docs/grafana-cloud/platform/security-and-account-management/security-and-access/authentication-and-permissions/)
 - [Alloy and OpenTelemetry Collector internal metrics](https://grafana.com/docs/grafana-cloud/observe-and-act/send-data/fleet-management/manage-fleet/collectors/troubleshoot-unhealthy-collector/internal-metrics/)

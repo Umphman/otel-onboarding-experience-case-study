@@ -13,23 +13,27 @@ onboarding with Grafana Alloy.
 |---|---|---|
 | Node processes + mock OTLP/HTTP | **Verified 2026-09-21** | Both configured variants sent non-empty protobuf requests to the trace, metric, and log endpoints; structured stdout proved healthy log correlation and the intended broken-case split. |
 | Docker + Alloy + local Grafana | **Verified — two volume-clean runs 2026-09-21** | At commit `5cbd086`, two runs rebuilt from removed volumes and proved the real Alloy-to-Tempo/Loki/Prometheus path; all three executable local failure scenarios were observed and followed by fresh successful recovery probes. |
-| Grafana Cloud | **Pending** | Route and authentication exercise documented, not executed. |
+| Grafana Cloud | **Observed — one bounded controlled run 2026-09-22** | A deliberately invalid credential produced signal-specific `401`/`Unauthenticated` export failures while Alloy still received telemetry; a fresh valid-token phase then produced queryable traces, logs, and metrics in the intended stack. This proves raw hosted receipt, not activation of a curated Application Observability view. |
 
-See the [runtime verification record](docs/evidence/runtime-verification.md) for tests; the
-[capture checklist](docs/images/) defines remaining proof.
+See the [runtime verification record](docs/evidence/runtime-verification.md) for tests and
+bounded execution evidence; the [capture checklist](docs/images/) defines the
+remaining public-safe visual proof.
 
 The executable implementation used for the completed local verification is
 commit `5cbd086da453659104b9f58eb007ba6557d1356d`. The initial local
 evidence and documentation record was introduced later at commit
 `4fcea6b8dc675975b2f4374d8aec1f9127f7262e`, a docs-only descendant that
-is not the runtime source. A Grafana Cloud run remains pending; its record must
-name the actual checked-out execution SHA and track any later capture or release
-commit separately.
+is not the runtime source. The Grafana Cloud checkpoint used checked-out base
+`35f3014a7a40f9468fe446e77dca39c8ce4c2001` plus the single Alloy v1.19.2
+authentication compatibility change now covered by a regression test. The
+[runtime verification record](docs/evidence/runtime-verification.md) preserves
+that distinction instead of attributing the run to a later evidence commit.
 
 Local machine verification is complete for that verified executable tree. The
 curated screenshot set, walkthrough video, public GitHub remote, and CI result
-on that public commit remain pending and are not claimed here. Grafana Cloud
-proof and the broader product hypotheses also remain unverified.
+on that public commit remain pending and are not claimed here. Hosted OTLP
+receipt is now verified; curated Application Observability activation,
+production readiness, and the broader product hypotheses remain unverified.
 
 ```mermaid
 flowchart LR
@@ -115,8 +119,9 @@ Receipt subchecks preserve the six-stage model while exposing partial delivery.
 
 The first three scenarios were executed independently at commit `5cbd086`; the
 intended failure and a fresh successful recovery probe were observed for each.
-The authentication scenario is a Cloud-only guided validation and is not
-claimed as executed in this environment.
+The Cloud authentication scenario was executed separately on 2026-09-22 from
+base `35f3014` plus the documented Alloy compatibility delta, then recovered
+with a fresh probe in the intended hosted stack.
 
 ## TTUT: definition and guardrails
 

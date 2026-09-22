@@ -11,10 +11,12 @@ local LGTM stack. The [runtime verification
 record](evidence/runtime-verification.md) records two volume-clean Docker runs
 of commit `5cbd086`, real Alloy-to-Tempo/Loki/Prometheus proof, and observed
 failure plus fresh recovery for all three executable local scenarios. This
-completes the local machine-verification gate. Grafana Cloud execution, curated
-screenshots, the walkthrough video, a public GitHub remote, and CI on the public
-commit remain pending. Cloud authentication recommendations are therefore
-evaluated separately, and the broader product recommendations remain
+completes the local machine-verification gate. A separate bounded Cloud run
+observed authentication rejection and fresh three-signal receipt in Grafana
+Explore. Public-safe screenshots, curated Application Observability activation,
+the walkthrough video, a public GitHub remote, and CI on the public commit
+remain pending. The Cloud authentication recommendations are now supported by
+one synthetic execution, while the broader product recommendations remain
 hypotheses requiring customer research and product data.
 
 ## Desired outcome

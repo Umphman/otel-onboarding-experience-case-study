@@ -37,6 +37,13 @@ otelcol.processor.batch "telemetry" {
 }
 
 otelcol.auth.basic "grafana_cloud" {
+  // Alloy v1.19.2 compatibility workaround for grafana/alloy#5793: dual-mode
+  // auth components also instantiate an unused server authenticator. Keep the
+  // real outbound credentials only in client_auth below. Remove after upgrading
+  // to an Alloy release that resolves the issue.
+  username = "__unused_server_auth__"
+  password = "__invalid_server_auth__"
+
   client_auth {
     username      = sys.env("GRAFANA_CLOUD_INSTANCE_ID")
     password_file = "/run/secrets/grafana_cloud_api_key"

@@ -14,8 +14,9 @@ executed the implementation at
 documentation record was introduced at
 `4fcea6b8dc675975b2f4374d8aec1f9127f7262e`, a documentation-only descendant
 of that executable tree. The runs include Alloy counter deltas plus Tempo,
-Loki, and Prometheus queries. The screenshot/video set and Grafana Cloud remain
-**unobserved**; those sections below remain an execution and capture contract.
+Loki, and Prometheus queries. A separate bounded Grafana Cloud checkpoint was
+observed on 2026-09-22 from base `35f3014` plus the documented Alloy v1.19.2
+compatibility delta. The public-safe screenshot/video set remains pending.
 
 Use these labels consistently:
 
@@ -235,11 +236,11 @@ Hypothesis
 | [Bad OTLP endpoint](scenarios/bad-otlp-endpoint/) | The workload stayed healthy while the application exporter received `ECONNREFUSED` at the deliberately wrong port; the failure probe produced no fresh Alloy receipt or Tempo/Loki result | **Observed:** after restoring port `4318`, a fresh pipeline-verifier probe reached Alloy and all three local backends |
 | [Missing service name](scenarios/missing-service-name/) | Signals arrived as `unknown_service:node` across Tempo, Loki, and Prometheus rather than as `checkout-api` | **Observed:** a fresh pipeline-verifier probe restored the intended identity in every required backend |
 | [Broken context propagation](scenarios/broken-context-propagation/) | Checkout and inventory remained successful but appeared under different backend trace IDs, with correspondingly split log trace IDs | **Observed:** a fresh pipeline-verifier probe restored one connected trace and same-trace structured logs |
-| [Invalid Cloud credentials](scenarios/invalid-cloud-credentials/) | **Pending — unobserved:** hosted export is expected to fail authentication while the local workload and app-to-Alloy boundary remain healthy | Required if run: authentication errors stop and a fresh probe appears in the intended Cloud stack |
+| [Invalid Cloud credentials](scenarios/invalid-cloud-credentials/) | **Observed once:** the workload remained healthy, Alloy accepted all three signals, outbound sends remained at zero, and the exporter reported HTTP `401` / `Unauthenticated` | **Observed recovery:** a fresh valid phase reached the intended managed metrics, traces, and logs sources. The invalid-phase negative backend query was not retained |
 
-The first three local scenarios and their fresh-probe recoveries are recorded in
-the [runtime verification record](docs/evidence/runtime-verification.md). The
-Cloud case is a guided exercise and remains **unobserved**.
+The first three local scenarios and their fresh-probe recoveries, plus the
+separate controlled Cloud checkpoint, are recorded in the [runtime verification
+record](docs/evidence/runtime-verification.md).
 
 For the bad-endpoint demonstration, remove demo volumes, start only the override,
 and record the exact exporter error:
@@ -300,12 +301,15 @@ docker compose down -v --remove-orphans
 
 ## Optional Grafana Cloud execution
 
-Grafana Cloud has **not** been executed for the current evidence record. The
-local LGTM route is the required reference proof; one Cloud run would add hosted
-authentication and destination evidence. The Cloud Alloy configuration
-intentionally has **no debug exporter**; debug output is confined to the local
-LGTM route. Never print the resolved Compose model, container environment,
-token, endpoint, stack identifier, account, organization, or user.
+This procedure was executed once on 2026-09-22 and remains the reproduction
+contract for a future run. It established a controlled authentication failure,
+fresh credential recovery, and hosted receipt in Grafana Explore. The private
+interactive screenshots contain account-derived data-source identifiers and
+are not public artifacts; curated Application Observability activation is also
+not claimed. The Cloud Alloy configuration intentionally has **no debug
+exporter**; debug output is confined to the local LGTM route. Never print the
+resolved Compose model, container environment, token, endpoint, stack
+identifier, account, organization, or user.
 
 Create a disposable stack and a temporary token limited to metrics, logs, and
 traces write. Copy `.env.cloud.example` to the ignored `.env.cloud`, set
@@ -343,12 +347,12 @@ docker compose --env-file .env.cloud -f docker-compose.cloud.yml up -d --force-r
 docker compose --env-file .env.cloud -f docker-compose.cloud.yml run --rm --no-deps loadgen
 ```
 
-Record the actual checked-out SHA and probe IDs. Verify hosted metrics, logs,
-and traces; the intended service identity; trace/log correlation; successful
-export or ingestion evidence; and at least one downstream product view when
-available. Raw OTLP receipt does not prove that a curated Application
-Observability surface is activated. Label local Alloy evidence separately from
-evidence observed in Grafana Cloud.
+Record the actual checked-out SHA, any working-tree runtime delta, and probe
+IDs. Verify hosted metrics, logs, and traces; the intended service identity;
+trace/log correlation; successful export or ingestion evidence; and at least
+one downstream product view when available. Raw OTLP receipt does not prove
+that a curated Application Observability surface is activated. Label local
+Alloy evidence separately from evidence observed in Grafana Cloud.
 
 Immediately after capture, remove the stack and its volume, revoke the token in
 Grafana Cloud, and record the revocation time in UTC:
@@ -423,7 +427,8 @@ public-safety requirements. Do not publish a placeholder as evidence.
   and three signal-specific source captures.
 - [ ] Record and link the approximately three-minute walkthrough above the fold.
 - [ ] Replace README capture-contract links with the actual proof.
-- [x] Keep Grafana Cloud explicitly unobserved unless the optional run occurs.
+- [x] Record the controlled Cloud execution separately from still-pending
+  public-safe Cloud captures and curated-product activation.
 - [x] Record exact OS, Docker, Compose, Node, image, commit, and timezone values.
 - [x] Scope automatic-instrumentation and identity-contract claims to this
   configured reference workload.
